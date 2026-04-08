@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sell Thru Simulator v3 - Enhanced</title>
+<title>Sell Thru Simulator v4 - Supply & Inventory</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; font-size: 13px; }
@@ -111,15 +111,14 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
 <body>
 
 <div class="header">
-  <h1>📊 Sell Thru Simulator v3 — Enhanced</h1>
-  <p>7가지 정교화 기능 탑재 | 계절성 자동 반영 · 시나리오 비교 · WOS 경보 · 발주량 역산 · 모델 드릴다운 · 백테스트</p>
+  <h1>📊 Sell Thru Simulator v4 — Supply & Inventory</h1>
+  <p>6탭 통합 구조 | 계절성 자동 반영 · 공급/재고 통합 시뮬 · 시나리오 비교 · 모델 드릴다운 · 백테스트</p>
 </div>
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab('mix')">🔀 모델별 믹스</div>
-  <div class="tab" onclick="switchTab('sim')">📈 채널 시뮬</div>
+  <div class="tab" onclick="switchTab('supply')">📦 공급/재고 시뮬</div>
   <div class="tab" onclick="switchTab('scenario')">🎯 시나리오 비교</div>
-  <div class="tab" onclick="switchTab('order')">📦 발주량 역산</div>
   <div class="tab" onclick="switchTab('annual')">📊 연간 뷰</div>
   <div class="tab" onclick="switchTab('trend')">📅 트렌드</div>
   <div class="tab" onclick="switchTab('backtest')">🔬 백테스트</div>
@@ -178,10 +177,10 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
   </div>
 </div>
 
-<!-- TAB 2: 채널별 시뮬레이터 (기존 + WOS 신호등 경보) -->
-<div id="tab-sim" class="tab-content">
+<!-- TAB 2: 공급/재고 통합 시뮬레이터 (v4 통합: 기존 Tab2 + Tab4) -->
+<div id="tab-supply" class="tab-content">
   <div class="card">
-    <div class="card-title">🚦 NEW: 채널별 WOS 신호등 경보</div>
+    <div class="card-title">🚦 채널별 WOS 신호등 경보</div>
     <div class="info-box">
       <span class="signal signal-red"></span> <strong>SHORTAGE</strong> (WOS < 기준 미달) &nbsp;
       <span class="signal signal-yellow"></span> <strong>OPPORTUNITY</strong> (재고 부족 주의) &nbsp;
@@ -195,16 +194,21 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
     <div id="stock-summary"></div>
   </div>
   <div class="card">
-    <div class="card-title">⚙️ 채널별 월 Sell Thru 목표 입력</div>
-    <div class="info-box">각 채널별로 Apr~Dec 월 Sell Thru 목표를 입력하세요. [목표 WOS 역산] 버튼으로 자동 채울 수 있습니다.</div>
-    <div id="sim-input-area"></div>
-    <div class="btn-group" style="margin-top:10px">
-      <button class="btn btn-primary" onclick="fillTargetWOS()">🎯 목표 WOS로 역산</button>
-      <button class="btn btn-success" onclick="runSimulation()">▶ 시뮬레이션 실행</button>
-      <button class="btn btn-info" onclick="exportSimCSV()">📥 CSV 내보내기</button>
+    <div class="card-title">⚙️ 채널별 월 Sell-Out 예상 & 목표 WOS 입력</div>
+    <div class="info-box">
+      <strong>통합 시뮬레이션:</strong> 매월 <code>재고 = 전월재고 + Sell-In(입고) - Sell-Out(판매)</code> 로직으로 적정 재고를 유지하기 위한 <strong>필요 발주량(Sell-In)</strong>을 자동 계산합니다.<br>
+      • <strong>Sell-Out</strong>: 예상 월 판매량 (직접 입력 또는 [자동 채우기]로 과거 데이터 기반 추정)<br>
+      • <strong>목표 WOS</strong>: 유지하고 싶은 적정 재고 주수 (기본값 = 채널별 HEALTHY 기준)<br>
+      • 결과: 월별 필요 입고량 + 월말 예상 재고 + WOS + 신호등
     </div>
-    <div id="sim-result"></div>
+    <div id="supply-input-area"></div>
+    <div class="btn-group" style="margin-top:10px">
+      <button class="btn btn-primary" onclick="autoFillSellOut()">📈 Sell-Out 자동 채우기 (과거 기반)</button>
+      <button class="btn btn-success" onclick="runSupplySimulation()">▶ 공급/재고 시뮬레이션 실행</button>
+      <button class="btn btn-info" onclick="exportSupplyCSV()">📥 CSV 내보내기</button>
+    </div>
   </div>
+  <div id="supply-result"></div>
 </div>
 
 <!-- TAB 3: 시나리오 비교 (NEW) -->
@@ -238,25 +242,7 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
   <div id="scenario-result"></div>
 </div>
 
-<!-- TAB 4: 발주량 역산 (NEW) -->
-<div id="tab-order" class="tab-content">
-  <div class="card">
-    <div class="card-title">📦 역산 발주량 계산기</div>
-    <div class="info-box">
-      <strong>목표 WOS를 유지하려면 매월 몇 대를 발주해야 하는가?</strong><br>
-      공식: <code>필요 발주량 = (목표WOS × 예상 월 셀아웃 / 4.33) - 현재고 + 누적 셀아웃</code><br>
-      채널별 목표 WOS를 설정하고 [계산] 버튼을 클릭하세요.
-    </div>
-    <div id="order-input-area"></div>
-    <div class="btn-group" style="margin-top:10px">
-      <button class="btn btn-success" onclick="runOrderCalc()">📦 발주량 계산</button>
-      <button class="btn btn-info" onclick="exportOrderCSV()">📥 CSV 내보내기</button>
-    </div>
-  </div>
-  <div id="order-result"></div>
-</div>
-
-<!-- TAB 5: 연간 뷰 (기존) -->
+<!-- TAB 4: 연간 뷰 (기존) -->
 <div id="tab-annual" class="tab-content">
   <div class="card">
     <div class="card-title">📊 2026 연간 카테고리별 Sell Out — 실적(Jan~Mar) + 시뮬 목표(Apr~Dec)</div>
@@ -285,7 +271,7 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
   </div>
 </div>
 
-<!-- TAB 6: 트렌드 (기존) -->
+<!-- TAB 5: 트렌드 (기존) -->
 <div id="tab-trend" class="tab-content">
   <div class="card">
     <div class="card-title">📅 연도별 카테고리별 셀아웃 트렌드 (YoY 성장률)</div>
@@ -298,7 +284,7 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
   </div>
 </div>
 
-<!-- TAB 7: 백테스트 (Coming Soon) -->
+<!-- TAB 6: 백테스트 (Coming Soon) -->
 <div id="tab-backtest" class="tab-content">
   <div class="card">
     <div class="coming-soon">
@@ -428,7 +414,7 @@ function buildSeasonChart() {
 }
 
 // ─── Tab switch ─────────────────────────────────────────────────────────────
-const TAB_IDS = ['mix','sim','scenario','order','annual','trend','backtest'];
+const TAB_IDS = ['mix','supply','scenario','annual','trend','backtest'];
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => {
     t.classList.toggle('active', TAB_IDS[i] === name);
@@ -440,10 +426,9 @@ function switchTab(name) {
     if (!document.querySelector('#annual-target-area .input-item, #annual-target-area > div')) buildAnnualTargetInputs();
     if (!document.querySelector('#mix-input-area .input-grid')) buildMixInputs();
   }
-  if (name === 'sim') { if (!document.querySelector('#stock-summary table')) buildSimTab(); buildWOSAlerts(); }
+  if (name === 'supply') { buildSupplyTab(); buildWOSAlerts(); }
   if (name === 'annual') buildAnnualTab();
   if (name === 'trend') buildTrendTab();
-  if (name === 'order') buildOrderTab();
 }
 
 // ─── TAB 1: ANNUAL TARGET → MONTHLY DISTRIBUTION (enhanced with 2yr avg) ──
@@ -725,7 +710,7 @@ function selectMixCat(cat, el) {
   document.getElementById('mix-channel-table').innerHTML = chHtml;
 }
 
-// ─── TAB 2: CHANNEL SIM + WOS ALERTS ───────────────────────────────────────
+// ─── TAB 2: UNIFIED SUPPLY & INVENTORY SIMULATION (v4) ────────────────────
 function getWOSSignal(wos, opp, healthy) {
   if (wos === 0) return { label: 'INACTIVE', color: '#9e9e9e', cls: 'signal-gray' };
   if (wos < opp) return { label: 'SHORTAGE', color: '#e74c3c', cls: 'signal-red' };
@@ -783,7 +768,8 @@ function buildWOSAlerts() {
   document.getElementById('wos-alerts').innerHTML = html;
 }
 
-function buildSimTab() {
+function buildSupplyTab() {
+  // Stock summary cards
   let html = `<div class="stat-grid">`;
   CHANNELS.forEach(ch => {
     const s = CHANNEL_STOCK[ch];
@@ -799,56 +785,204 @@ function buildSimTab() {
   html += `</div>`;
   document.getElementById('stock-summary').innerHTML = html;
 
+  // Input table: Sell-Out per month + Target WOS
+  const area = document.getElementById('supply-input-area');
+  if (area && area.querySelector('table')) return; // already built
   let sinput = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Channel</th><th>Group</th><th>Stock</th><th>WOS</th>`;
-  FUTURE_MONTHS.forEach(m => sinput += `<th>${m}</th>`);
+    <thead><tr><th>Channel</th><th>Group</th><th>현재고</th><th>현재WOS</th><th>목표WOS</th>`;
+  FUTURE_MONTHS.forEach(m => sinput += `<th>${m}<br><small>Sell-Out</small></th>`);
   sinput += `</tr></thead><tbody>`;
   CHANNELS.forEach(ch => {
     const s = CHANNEL_STOCK[ch]; if (!s) return;
     sinput += `<tr><td>${ch}</td><td>${s.group}</td><td class="num">${fmt(s.stock)}</td><td class="num">${s.wos}W</td>`;
+    sinput += `<td><input type="number" id="sup-wos-${ch}" value="${s.wos_healthy}" min="1" style="width:55px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px"></td>`;
     FUTURE_MONTHS.forEach(m => {
-      sinput += `<td><input type="number" id="sim-${ch}-${m}" style="width:70px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px" min="0" value=""></td>`;
+      sinput += `<td><input type="number" id="sup-sell-${ch}-${m}" style="width:65px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px" min="0" value=""></td>`;
     });
     sinput += `</tr>`;
   });
   sinput += `</tbody></table></div>`;
-  document.getElementById('sim-input-area').innerHTML = sinput;
+  area.innerHTML = sinput;
 }
 
-function fillTargetWOS() {
+function autoFillSellOut() {
+  // Use channel's current weekly sell rate (stock / wos) × 4.33 as monthly estimate
+  // Then apply seasonality index from Tab 1
+  const seasonIdx = getSeasonalityIndex();
   CHANNELS.forEach(ch => {
     const s = CHANNEL_STOCK[ch]; if (!s) return;
-    const monthly = Math.round(s.stock / (s.wos_healthy / 4.33));
+    // Base monthly sell-out from current WOS
+    const weeklyRate = s.wos > 0 ? s.stock / s.wos : 0;
+    const baseMonthly = Math.round(weeklyRate * 4.33);
+    // Apply seasonality adjustment
+    // Average across all categories for channel-level adjustment
     FUTURE_MONTHS.forEach(m => {
-      const el = document.getElementById(`sim-${ch}-${m}`);
-      if (el && !el.value) el.value = monthly || '';
+      let seasonAvg = 0, cnt = 0;
+      CATEGORIES.forEach(cat => {
+        const idx = seasonIdx[cat]?.[m];
+        if (idx && idx > 0) { seasonAvg += idx; cnt++; }
+      });
+      seasonAvg = cnt > 0 ? seasonAvg / cnt : 1.0;
+      const adjusted = Math.round(baseMonthly * seasonAvg);
+      const el = document.getElementById(`sup-sell-${ch}-${m}`);
+      if (el && !el.value) el.value = adjusted > 0 ? adjusted : '';
     });
   });
+  alert('✅ Sell-Out 자동 채우기 완료!\n현재 재고/WOS 기반 + 계절성 지수 반영');
 }
 
-function runSimulation() {
-  let html = `<div style="margin-top:12px"><div class="card-title">📊 시뮬레이션 결과 — 월말 예상 WOS + 🚦 신호등</div>
+function runSupplySimulation() {
+  // Results: 3 tables - (1) 필요 발주량(Sell-In), (2) 월말 재고, (3) WOS+신호등
+  let html = '';
+
+  // === TABLE 1: 필요 발주량 (Sell-In) ===
+  html += `<div class="card" style="margin-top:12px"><div class="card-title">📦 월별 필요 발주량 (Sell-In) — 적정 재고 유지를 위한 입고량</div>
+    <div class="info-box">공식: <code>필요입고 = max(0, 목표재고 - (전월재고 - Sell-Out))</code> &nbsp;|&nbsp; <code>목표재고 = 목표WOS × Sell-Out / 4.33</code></div>
     <div class="tbl-wrap"><table>
-    <thead><tr><th>Channel</th>`;
-  FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>End WOS</small></th>`);
-  html += `<th>Target</th></tr></thead><tbody>`;
+    <thead><tr><th>Channel</th><th>현재고</th><th>목표WOS</th>`;
+  FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>발주(Sell-In)</small></th>`);
+  html += `<th>총 발주</th><th>상태</th></tr></thead><tbody>`;
+
+  const simData = {};
+  let totalOrders = {}; FUTURE_MONTHS.forEach(m => totalOrders[m] = 0);
 
   CHANNELS.forEach(ch => {
     const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const targetWOS = parseInt(document.getElementById(`sup-wos-${ch}`)?.value) || s.wos_healthy;
     let stock = s.stock;
-    html += `<tr><td>${ch}</td>`;
+    let totalOrder = 0;
+    simData[ch] = { months: {}, targetWOS };
+
+    html += `<tr><td>${ch}</td><td class="num">${fmt(s.stock)}</td><td class="num">${targetWOS}W</td>`;
     FUTURE_MONTHS.forEach(m => {
-      const el = document.getElementById(`sim-${ch}-${m}`);
-      const sellthru = parseInt(el?.value || 0) || 0;
-      stock = Math.max(0, stock - sellthru);
-      const wos = sellthru > 0 ? (stock / (sellthru / 4.33)) : 0;
-      const sig = getWOSSignal(wos, s.wos_opportunity, s.wos_healthy);
-      html += `<td class="num" style="font-weight:600"><span class="signal ${sig.cls}"></span><span style="color:${sig.color}">${wos.toFixed(1)}W</span></td>`;
+      const sellOut = parseInt(document.getElementById(`sup-sell-${ch}-${m}`)?.value) || 0;
+      const afterSale = Math.max(0, stock - sellOut);
+      const targetStock = Math.round(targetWOS * sellOut / 4.33);
+      const sellIn = Math.max(0, targetStock - afterSale);
+      stock = afterSale + sellIn; // 월말재고 = 판매후잔고 + 입고
+      const wos = sellOut > 0 ? (stock / (sellOut / 4.33)) : (stock > 0 ? 999 : 0);
+      totalOrder += sellIn;
+      totalOrders[m] += sellIn;
+      simData[ch].months[m] = { sellOut, sellIn, endStock: stock, wos: Math.min(wos, 999) };
+
+      const bg = sellIn > 0 ? (sellIn > sellOut ? '#ffebee' : '#fff9e6') : '#e8f5e9';
+      html += `<td class="num" style="background:${bg};font-weight:600">${sellIn > 0 ? fmt(sellIn) : '—'}</td>`;
     });
-    html += `<td class="num">${s.wos_healthy}W</td></tr>`;
+    const status = totalOrder === 0 ? '<span class="trend up">충분</span>' :
+                   totalOrder > s.stock ? '<span class="trend dn">대량 발주 필요</span>' :
+                   '<span class="trend flat">소량 발주</span>';
+    html += `<td class="num" style="font-weight:700">${fmt(totalOrder)}</td><td>${status}</td></tr>`;
   });
-  html += `</tbody></table></div></div>`;
-  document.getElementById('sim-result').innerHTML = html;
+
+  // Total row
+  const grandTotal = Object.values(totalOrders).reduce((a,b)=>a+b,0);
+  html += '<tr style="font-weight:700;background:#f0f4ff"><td colspan="3">합계</td>';
+  FUTURE_MONTHS.forEach(m => html += `<td class="num">${fmt(totalOrders[m])}</td>`);
+  html += `<td class="num" style="font-size:14px">${fmt(grandTotal)}</td><td></td></tr>`;
+  html += '</tbody></table></div></div>';
+
+  // === TABLE 2: 월말 예상 재고 ===
+  html += `<div class="card"><div class="card-title">📋 월말 예상 재고량 — 재고 = 전월재고 + Sell-In - Sell-Out</div>
+    <div class="tbl-wrap"><table>
+    <thead><tr><th>Channel</th><th>현재고</th>`;
+  FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>월말재고</small></th>`);
+  html += `</tr></thead><tbody>`;
+
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const d = simData[ch]; if (!d) return;
+    html += `<tr><td>${ch}</td><td class="num" style="font-weight:600">${fmt(s.stock)}</td>`;
+    FUTURE_MONTHS.forEach(m => {
+      const md = d.months[m]; if (!md) { html += '<td>—</td>'; return; }
+      const bg = md.endStock < 100 ? '#ffebee' : md.endStock > s.stock * 1.5 ? '#e3f2fd' : '';
+      html += `<td class="num" style="font-weight:600;${bg?'background:'+bg:''}">${fmt(md.endStock)}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  // === TABLE 3: WOS 추이 + 신호등 ===
+  html += `<div class="card"><div class="card-title">🚦 월말 WOS 추이 + 신호등 — 적정 재고 수준 모니터링</div>
+    <div class="tbl-wrap"><table>
+    <thead><tr><th>Channel</th><th>현재WOS</th>`;
+  FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>WOS</small></th>`);
+  html += `<th>목표</th></tr></thead><tbody>`;
+
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const d = simData[ch]; if (!d) return;
+    const curSig = getWOSSignal(s.wos, s.wos_opportunity, s.wos_healthy);
+    html += `<tr><td>${ch}</td><td class="num"><span class="signal ${curSig.cls}"></span><span style="color:${curSig.color};font-weight:600">${s.wos}W</span></td>`;
+    FUTURE_MONTHS.forEach(m => {
+      const md = d.months[m]; if (!md) { html += '<td>—</td>'; return; }
+      const sig = getWOSSignal(md.wos, s.wos_opportunity, s.wos_healthy);
+      const wosDisplay = md.wos >= 999 ? '∞' : md.wos.toFixed(1);
+      html += `<td class="num" style="font-weight:600"><span class="signal ${sig.cls}"></span><span style="color:${sig.color}">${wosDisplay}W</span></td>`;
+    });
+    html += `<td class="num" style="background:#e8f5e9;font-weight:700">${d.targetWOS}W</td></tr>`;
+  });
+  html += '</tbody></table></div></div>';
+
+  // === SUMMARY CARD ===
+  html += `<div class="card"><div class="card-title">📊 시뮬레이션 요약</div><div class="stat-grid">`;
+  let totalSellIn = 0, totalSellOut = 0;
+  const chSummary = [];
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const d = simData[ch]; if (!d) return;
+    let chSellIn = 0, chSellOut = 0;
+    FUTURE_MONTHS.forEach(m => {
+      const md = d.months[m]; if (!md) return;
+      chSellIn += md.sellIn; chSellOut += md.sellOut;
+    });
+    totalSellIn += chSellIn; totalSellOut += chSellOut;
+    const lastMonth = d.months[FUTURE_MONTHS[FUTURE_MONTHS.length-1]];
+    chSummary.push({ ch, sellIn: chSellIn, sellOut: chSellOut, endStock: lastMonth?.endStock || 0, endWOS: lastMonth?.wos || 0 });
+  });
+
+  html += `<div class="stat-box" style="border:2px solid #0f3460">
+    <div class="val" style="font-size:16px">${fmt(totalSellIn)}</div>
+    <div class="lbl">총 필요 발주량 (Apr~Dec)</div>
+  </div>
+  <div class="stat-box">
+    <div class="val" style="font-size:16px;color:#e74c3c">${fmt(totalSellOut)}</div>
+    <div class="lbl">총 예상 판매량 (Apr~Dec)</div>
+  </div>
+  <div class="stat-box">
+    <div class="val" style="font-size:16px;color:#27ae60">${chSummary.filter(c => {
+      const s = CHANNEL_STOCK[c.ch];
+      const sig = getWOSSignal(c.endWOS, s.wos_opportunity, s.wos_healthy);
+      return sig.label === 'HEALTHY';
+    }).length} / ${chSummary.length}</div>
+    <div class="lbl">Dec 말 적정 재고 채널 수</div>
+  </div></div></div>`;
+
+  document.getElementById('supply-result').innerHTML = html;
+}
+
+function exportSupplyCSV() {
+  let csv = 'Channel,Group,Current_Stock,Target_WOS';
+  FUTURE_MONTHS.forEach(m => csv += `,${m}_SellOut,${m}_SellIn,${m}_EndStock,${m}_WOS`);
+  csv += ',Total_SellIn,Total_SellOut\n';
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const targetWOS = parseInt(document.getElementById(`sup-wos-${ch}`)?.value) || s.wos_healthy;
+    let stock = s.stock, totalIn = 0, totalOut = 0;
+    let row = `${ch},${s.group},${stock},${targetWOS}`;
+    FUTURE_MONTHS.forEach(m => {
+      const sellOut = parseInt(document.getElementById(`sup-sell-${ch}-${m}`)?.value) || 0;
+      const afterSale = Math.max(0, stock - sellOut);
+      const targetStock = Math.round(targetWOS * sellOut / 4.33);
+      const sellIn = Math.max(0, targetStock - afterSale);
+      stock = afterSale + sellIn;
+      const wos = sellOut > 0 ? (stock / (sellOut / 4.33)) : 0;
+      totalIn += sellIn; totalOut += sellOut;
+      row += `,${sellOut},${sellIn},${stock},${wos.toFixed(1)}`;
+    });
+    row += `,${totalIn},${totalOut}`;
+    csv += row + '\n';
+  });
+  downloadCSV(csv, 'Supply_Inventory_Sim.csv');
 }
 
 // ─── TAB 3: SCENARIO COMPARISON (NEW) ──────────────────────────────────────
@@ -990,92 +1124,7 @@ function exportScenarioCSV() {
   downloadCSV(csv, 'Scenario_Comparison.csv');
 }
 
-// ─── TAB 4: ORDER QUANTITY REVERSE CALC (NEW) ──────────────────────────────
-function buildOrderTab() {
-  let html = '<div class="card"><div class="card-title">📦 채널별 목표 WOS 설정</div>';
-  html += '<div class="tbl-wrap"><table><thead><tr><th>Channel</th><th>Group</th><th>현재고</th><th>현재 WOS</th><th>목표 WOS (주)</th><th>예상 월 셀아웃</th></tr></thead><tbody>';
-  CHANNELS.forEach(ch => {
-    const s = CHANNEL_STOCK[ch]; if (!s) return;
-    const defaultSellout = Math.round(s.stock / (s.wos / 4.33)) || 0;
-    html += `<tr><td>${ch}</td><td>${s.group}</td><td class="num">${fmt(s.stock)}</td><td class="num">${s.wos}W</td>`;
-    html += `<td><input type="number" id="ord-wos-${ch}" value="${s.wos_healthy}" min="1" style="width:60px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px"></td>`;
-    html += `<td><input type="number" id="ord-sell-${ch}" value="${defaultSellout}" min="0" style="width:80px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px"></td>`;
-    html += '</tr>';
-  });
-  html += '</tbody></table></div></div>';
-  document.getElementById('order-input-area').innerHTML = html;
-}
-
-function runOrderCalc() {
-  let html = '<div class="card"><div class="card-title">📦 월별 필요 발주량 계산 결과</div>';
-  html += '<div class="info-box">공식: 필요재고 = 목표WOS × (예상월셀아웃 / 4.33) | 발주량 = 필요재고 - 현재고 + 월셀아웃</div>';
-  html += '<div class="tbl-wrap"><table><thead><tr><th>Channel</th><th>현재고</th><th>목표WOS</th><th>예상셀아웃/월</th>';
-  FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>발주 필요</small></th>`);
-  html += '<th>총 발주</th><th>상태</th></tr></thead><tbody>';
-
-  let totalOrders = {};
-  FUTURE_MONTHS.forEach(m => totalOrders[m] = 0);
-
-  CHANNELS.forEach(ch => {
-    const s = CHANNEL_STOCK[ch]; if (!s) return;
-    const targetWOS = parseInt(document.getElementById(`ord-wos-${ch}`)?.value) || s.wos_healthy;
-    const monthlySell = parseInt(document.getElementById(`ord-sell-${ch}`)?.value) || 0;
-
-    let stock = s.stock;
-    let totalOrder = 0;
-    html += `<tr><td>${ch}</td><td class="num">${fmt(stock)}</td><td class="num">${targetWOS}W</td><td class="num">${fmt(monthlySell)}</td>`;
-
-    FUTURE_MONTHS.forEach(m => {
-      stock = Math.max(0, stock - monthlySell);
-      const targetStock = Math.round(targetWOS * monthlySell / 4.33);
-      const orderQty = Math.max(0, targetStock - stock);
-      stock += orderQty;
-      totalOrder += orderQty;
-      totalOrders[m] += orderQty;
-      const bg = orderQty > 0 ? (orderQty > monthlySell ? '#ffebee' : '#fff9e6') : '#e8f5e9';
-      html += `<td class="num" style="background:${bg};font-weight:600">${orderQty > 0 ? fmt(orderQty) : '-'}</td>`;
-    });
-
-    const status = totalOrder === 0 ? '<span class="trend up">충분</span>' :
-                   totalOrder > s.stock ? '<span class="trend dn">대량 발주 필요</span>' :
-                   '<span class="trend flat">소량 발주</span>';
-    html += `<td class="num" style="font-weight:700">${fmt(totalOrder)}</td><td>${status}</td></tr>`;
-  });
-
-  // Total row
-  const grandTotal = Object.values(totalOrders).reduce((a,b)=>a+b,0);
-  html += '<tr style="font-weight:700;background:#f0f4ff"><td colspan="4">합계</td>';
-  FUTURE_MONTHS.forEach(m => html += `<td class="num">${fmt(totalOrders[m])}</td>`);
-  html += `<td class="num" style="font-size:14px">${fmt(grandTotal)}</td><td></td></tr>`;
-  html += '</tbody></table></div></div>';
-
-  document.getElementById('order-result').innerHTML = html;
-}
-
-function exportOrderCSV() {
-  let csv = 'Channel,Group,Current_Stock,Target_WOS,Monthly_Sellout';
-  FUTURE_MONTHS.forEach(m => csv += ',' + m + '_Order');
-  csv += ',Total_Order\n';
-  CHANNELS.forEach(ch => {
-    const s = CHANNEL_STOCK[ch]; if (!s) return;
-    const targetWOS = parseInt(document.getElementById(`ord-wos-${ch}`)?.value) || s.wos_healthy;
-    const monthlySell = parseInt(document.getElementById(`ord-sell-${ch}`)?.value) || 0;
-    let stock = s.stock, total = 0;
-    let row = `${ch},${s.group},${stock},${targetWOS},${monthlySell}`;
-    FUTURE_MONTHS.forEach(m => {
-      stock = Math.max(0, stock - monthlySell);
-      const targetStock = Math.round(targetWOS * monthlySell / 4.33);
-      const orderQty = Math.max(0, targetStock - stock);
-      stock += orderQty; total += orderQty;
-      row += ',' + orderQty;
-    });
-    row += ',' + total;
-    csv += row + '\n';
-  });
-  downloadCSV(csv, 'Order_Quantity_Calc.csv');
-}
-
-// ─── TAB 5: ANNUAL VIEW (same as v2) ──────────────────────────────────────
+// ─── TAB 4: ANNUAL VIEW (same as v2) ──────────────────────────────────────
 function buildAnnualTab() {
   const rows = CATEGORIES.map(cat => {
     const actual = ACTUAL_2026[cat] || {};
@@ -1240,7 +1289,7 @@ function exportAnnualCSV() {
   downloadCSV(csv, 'Annual_View_2026.csv');
 }
 
-// ─── TAB 6: TREND (same as v2) ────────────────────────────────────────────
+// ─── TAB 5: TREND (same as v2) ────────────────────────────────────────────
 function buildTrendTab() {
   let html = '<div class="tbl-wrap"><table><thead><tr><th>Category</th>';
   ALL_MONTHS.forEach(m => html += '<th>'+m+'</th>');
@@ -1311,18 +1360,6 @@ function exportMixCSV() {
     });
   });
   downloadCSV(csv, 'ModelMix_Distribution.csv');
-}
-
-function exportSimCSV() {
-  let csv = 'Channel,Group,Month,Sell_Thru_Target\n';
-  CHANNELS.forEach(ch => {
-    const s = CHANNEL_STOCK[ch];
-    FUTURE_MONTHS.forEach(m => {
-      const el = document.getElementById(`sim-${ch}-${m}`);
-      csv += `${ch},${s?.group||''},${m},${el?.value||0}\n`;
-    });
-  });
-  downloadCSV(csv, 'Channel_SellThru_Sim.csv');
 }
 
 function fmt(n) { return (n||0).toLocaleString(); }
