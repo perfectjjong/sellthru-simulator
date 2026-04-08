@@ -3,35 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sell Thru Simulator v2 - Model Mix</title>
+<title>Sell Thru Simulator v3 - Enhanced</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; font-size: 13px; }
 .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 16px 24px; }
 .header h1 { font-size: 20px; font-weight: 700; }
 .header p { font-size: 12px; color: #a0b4cc; margin-top: 4px; }
-.tabs { display: flex; background: #1a1a2e; padding: 0 16px; gap: 2px; }
-.tab { padding: 10px 20px; cursor: pointer; color: #a0b4cc; font-size: 13px; border-bottom: 3px solid transparent; transition: all .2s; }
+.tabs { display: flex; background: #1a1a2e; padding: 0 16px; gap: 2px; flex-wrap: wrap; }
+.tab { padding: 10px 16px; cursor: pointer; color: #a0b4cc; font-size: 12px; border-bottom: 3px solid transparent; transition: all .2s; white-space: nowrap; }
 .tab.active { color: #4fc3f7; border-bottom-color: #4fc3f7; font-weight: 600; }
 .tab:hover:not(.active) { color: #fff; }
 .tab-content { display: none; padding: 16px; }
 .tab-content.active { display: block; }
-
-/* Cards */
 .card { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 12px; }
 .card-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #1a1a2e; border-bottom: 2px solid #e0e6f0; padding-bottom: 8px; }
 .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .col { flex: 1; min-width: 200px; }
-.col2 { flex: 2; min-width: 300px; }
-
-/* Input grid */
 .input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
 .input-item { display: flex; flex-direction: column; gap: 4px; }
 .input-item label { font-size: 11px; color: #666; font-weight: 600; }
 .input-item input { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-size: 13px; text-align: right; }
 .input-item input:focus { outline: none; border-color: #4fc3f7; box-shadow: 0 0 0 2px rgba(79,195,247,.2); }
-
-/* Buttons */
 .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all .2s; }
 .btn-primary { background: #0f3460; color: white; }
 .btn-primary:hover { background: #16213e; }
@@ -41,9 +34,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; fo
 .btn-info:hover { background: #29b6f6; }
 .btn-warn { background: #f39c12; color: white; }
 .btn-warn:hover { background: #e67e22; }
+.btn-danger { background: #e74c3c; color: white; }
+.btn-danger:hover { background: #c0392b; }
 .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-
-/* Table */
 .tbl-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th { background: #1a1a2e; color: white; padding: 8px 10px; text-align: center; font-weight: 600; white-space: nowrap; }
@@ -61,64 +54,97 @@ tr.inspect-row td:first-child { border-left: 3px solid #f39c12 !important; }
 tr.inspect-row .inspect-btn { opacity:1; color:#f39c12; }
 .bar-cell { position: relative; }
 .bar { height: 14px; background: linear-gradient(90deg, #4fc3f7, #0f3460); border-radius: 2px; min-width: 2px; display: inline-block; }
-
-/* Category chips */
 .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .chip { padding: 4px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #dde1e8; background: white; color: #555; transition: all .2s; }
 .chip.active { background: #0f3460; color: white; border-color: #0f3460; }
 .chip:hover:not(.active) { border-color: #4fc3f7; color: #4fc3f7; }
-
-/* Stat boxes */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px; }
 .stat-box { background: #f8fafd; border: 1px solid #e0e6f0; border-radius: 6px; padding: 10px; text-align: center; }
 .stat-box .val { font-size: 20px; font-weight: 700; color: #0f3460; }
 .stat-box .lbl { font-size: 11px; color: #888; margin-top: 2px; }
-
-/* Trend badge */
 .trend { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; }
 .trend.up { background: #e8f5e9; color: #27ae60; }
 .trend.dn { background: #ffebee; color: #e74c3c; }
 .trend.flat { background: #f5f5f5; color: #888; }
-
-/* Section header */
 .sec-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .sec-hdr h3 { font-size: 14px; font-weight: 700; color: #1a1a2e; }
 .badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
 .badge-blue { background: #e3f2fd; color: #1565c0; }
 .badge-green { background: #e8f5e9; color: #2e7d32; }
-
 select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-size: 13px; }
 .info-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; line-height: 1.6; color: #1a3a5c; }
 .warn-box { background: #fff8e1; border-left: 4px solid #f39c12; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: #7d5a00; }
+.alert-box { background: #ffebee; border-left: 4px solid #e74c3c; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: #b71c1c; }
+.success-box { background: #e8f5e9; border-left: 4px solid #27ae60; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: #1b5e20; }
+
+/* Signal lights */
+.signal { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.signal-red { background: #e74c3c; box-shadow: 0 0 6px rgba(231,76,60,.5); }
+.signal-yellow { background: #f39c12; box-shadow: 0 0 6px rgba(243,156,18,.5); }
+.signal-green { background: #27ae60; box-shadow: 0 0 6px rgba(39,174,96,.5); }
+.signal-blue { background: #3498db; box-shadow: 0 0 6px rgba(52,152,219,.5); }
+.signal-gray { background: #9e9e9e; }
+
+/* Scenario colors */
+.sc-optimistic { color: #27ae60; }
+.sc-base { color: #0f3460; }
+.sc-conservative { color: #e74c3c; }
+.sc-opt-bg { background: #e8f5e9; }
+.sc-base-bg { background: #e3f2fd; }
+.sc-con-bg { background: #ffebee; }
+
+/* Confidence band */
+.band-fill { fill: rgba(79,195,247,0.2); }
+.band-line { stroke: #0f3460; fill: none; stroke-width: 2; }
+.band-upper { stroke: #27ae60; fill: none; stroke-width: 1; stroke-dasharray: 4,4; }
+.band-lower { stroke: #e74c3c; fill: none; stroke-width: 1; stroke-dasharray: 4,4; }
+
+/* Coming soon */
+.coming-soon { text-align: center; padding: 60px 20px; color: #999; }
+.coming-soon h2 { font-size: 24px; color: #ccc; margin-bottom: 12px; }
+.coming-soon p { font-size: 14px; line-height: 1.8; }
+
+/* Seasonality chart */
+.season-bar { display: inline-block; height: 20px; border-radius: 2px; margin-right: 2px; vertical-align: bottom; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>📊 Sell Thru Simulator v2 — Model Mix 분배</h1>
-  <p>카테고리별 월 판매 목표 입력 → 과거 트렌드 기반 모델별 자동 분배 | 데이터: 2025~2026 YTD</p>
+  <h1>📊 Sell Thru Simulator v3 — Enhanced</h1>
+  <p>7가지 정교화 기능 탑재 | 계절성 자동 반영 · 시나리오 비교 · WOS 경보 · 발주량 역산 · 모델 드릴다운 · 백테스트</p>
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('mix')">🔀 모델별 믹스 분배</div>
-  <div class="tab" onclick="switchTab('sim')">📈 채널별 Sell Thru 시뮬</div>
-  <div class="tab" onclick="switchTab('annual')">📊 연간 뷰 (실적+시뮬)</div>
-  <div class="tab" onclick="switchTab('trend')">📅 연도별 트렌드</div>
+  <div class="tab active" onclick="switchTab('mix')">🔀 모델별 믹스</div>
+  <div class="tab" onclick="switchTab('sim')">📈 채널 시뮬</div>
+  <div class="tab" onclick="switchTab('scenario')">🎯 시나리오 비교</div>
+  <div class="tab" onclick="switchTab('order')">📦 발주량 역산</div>
+  <div class="tab" onclick="switchTab('annual')">📊 연간 뷰</div>
+  <div class="tab" onclick="switchTab('trend')">📅 트렌드</div>
+  <div class="tab" onclick="switchTab('backtest')">🔬 백테스트</div>
 </div>
 
-<!-- TAB 1: 모델별 믹스 분배 -->
+<!-- TAB 1: 모델별 믹스 분배 (기존 + 계절성 강화) -->
 <div id="tab-mix" class="tab-content active">
-  <!-- 연간 목표 입력 카드 -->
+  <div class="card">
+    <div class="card-title">🌡️ NEW: 계절성 패턴 분석 (2024+2025 평균)</div>
+    <div class="info-box">
+      <strong>개선점:</strong> 기존 2025년만 사용하던 계절성을 <strong>2024+2025 2개년 평균</strong>으로 강화했습니다.<br>
+      아래 차트에서 카테고리별 월별 계절 지수를 확인하세요. 지수 > 1.0 = 성수기, < 1.0 = 비수기
+    </div>
+    <div id="season-chart"></div>
+  </div>
+
   <div class="card">
     <div class="card-title">🎯 연간 목표 수량 입력 → 월별 자동 분배</div>
     <div class="info-box">
       <strong>사용법:</strong> 카테고리별 <strong>연간 총 목표 수량</strong>을 입력하세요.<br>
-      Jan~Mar 2026 실적을 차감한 잔여 물량(Apr~Dec)을 <strong>2025년 계절성 패턴</strong>을 기반으로 월별로 자동 분배합니다.<br>
-      분배 후 [STEP 1]의 월별 입력값에 자동으로 채워집니다. 원하시면 개별 수정 가능합니다.
+      Jan~Mar 2026 실적을 차감한 잔여 물량(Apr~Dec)을 <strong>2024+2025 평균 계절성</strong>을 기반으로 월별로 자동 분배합니다.
     </div>
     <div id="annual-target-area"></div>
     <div class="btn-group" style="margin-top:10px">
-      <button class="btn btn-success" onclick="applyAnnualTarget()">📅 연간→월별 분배 (2025 계절성 기반)</button>
+      <button class="btn btn-success" onclick="applyAnnualTarget()">📅 연간→월별 분배 (2개년 계절성 기반)</button>
       <button class="btn btn-warn" onclick="clearAnnualTargets()">🗑️ 연간 목표 초기화</button>
     </div>
     <div id="annual-target-preview" style="display:none;margin-top:10px"></div>
@@ -152,8 +178,18 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
   </div>
 </div>
 
-<!-- TAB 2: 채널별 시뮬레이터 -->
+<!-- TAB 2: 채널별 시뮬레이터 (기존 + WOS 신호등 경보) -->
 <div id="tab-sim" class="tab-content">
+  <div class="card">
+    <div class="card-title">🚦 NEW: 채널별 WOS 신호등 경보</div>
+    <div class="info-box">
+      <span class="signal signal-red"></span> <strong>SHORTAGE</strong> (WOS < 기준 미달) &nbsp;
+      <span class="signal signal-yellow"></span> <strong>OPPORTUNITY</strong> (재고 부족 주의) &nbsp;
+      <span class="signal signal-green"></span> <strong>HEALTHY</strong> (적정 수준) &nbsp;
+      <span class="signal signal-blue"></span> <strong>OVERSTOCK</strong> (과재고)
+    </div>
+    <div id="wos-alerts"></div>
+  </div>
   <div class="card">
     <div class="card-title">📋 현재 채널별 재고 현황 (W14 기준)</div>
     <div id="stock-summary"></div>
@@ -171,7 +207,56 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
   </div>
 </div>
 
-<!-- TAB 3: 연간 뷰 (실적 + 시뮬) -->
+<!-- TAB 3: 시나리오 비교 (NEW) -->
+<div id="tab-scenario" class="tab-content">
+  <div class="card">
+    <div class="card-title">🎯 3-시나리오 비교 (낙관 / 기본 / 보수)</div>
+    <div class="info-box">
+      <strong>사용법:</strong> 기본 시나리오 성장률을 조정하면 낙관(+10%p)/보수(-10%p)가 자동 계산됩니다.<br>
+      기본 시나리오 = YoY 트렌드 기반 | 3가지 시나리오를 나란히 비교할 수 있습니다.<br>
+      <strong>신뢰구간 밴드:</strong> 낙관~보수 범위가 시각적 밴드로 표시됩니다.
+    </div>
+    <div class="row">
+      <div class="col">
+        <div class="input-item">
+          <label>낙관 추가 성장률 (%p)</label>
+          <input type="number" id="sc-opt-delta" value="10" min="0" max="50" style="width:80px">
+        </div>
+      </div>
+      <div class="col">
+        <div class="input-item">
+          <label>보수 감소 성장률 (%p)</label>
+          <input type="number" id="sc-con-delta" value="10" min="0" max="50" style="width:80px">
+        </div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" onclick="runScenarioComparison()">🎯 시나리오 비교 실행</button>
+      <button class="btn btn-info" onclick="exportScenarioCSV()">📥 CSV 내보내기</button>
+    </div>
+  </div>
+  <div id="scenario-result"></div>
+</div>
+
+<!-- TAB 4: 발주량 역산 (NEW) -->
+<div id="tab-order" class="tab-content">
+  <div class="card">
+    <div class="card-title">📦 역산 발주량 계산기</div>
+    <div class="info-box">
+      <strong>목표 WOS를 유지하려면 매월 몇 대를 발주해야 하는가?</strong><br>
+      공식: <code>필요 발주량 = (목표WOS × 예상 월 셀아웃 / 4.33) - 현재고 + 누적 셀아웃</code><br>
+      채널별 목표 WOS를 설정하고 [계산] 버튼을 클릭하세요.
+    </div>
+    <div id="order-input-area"></div>
+    <div class="btn-group" style="margin-top:10px">
+      <button class="btn btn-success" onclick="runOrderCalc()">📦 발주량 계산</button>
+      <button class="btn btn-info" onclick="exportOrderCSV()">📥 CSV 내보내기</button>
+    </div>
+  </div>
+  <div id="order-result"></div>
+</div>
+
+<!-- TAB 5: 연간 뷰 (기존) -->
 <div id="tab-annual" class="tab-content">
   <div class="card">
     <div class="card-title">📊 2026 연간 카테고리별 Sell Out — 실적(Jan~Mar) + 시뮬 목표(Apr~Dec)</div>
@@ -194,14 +279,13 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
     <div class="card-title">📅 2024 / 2025 / 2026 연도별 실적 비교 (Sell Out)</div>
     <div class="info-box">
       <strong>2024 / 2025</strong>: IR 5채널 + OR 5채널 합산 실제 Sell Out &nbsp;|&nbsp;
-      <strong>2026</strong>: Jan~Mar 실적 + Apr~Dec 시뮬 목표 합산 &nbsp;|&nbsp;
-      Concealed Set / Cassette AC는 2024~2025 데이터 미포함
+      <strong>2026</strong>: Jan~Mar 실적 + Apr~Dec 시뮬 목표 합산
     </div>
     <div id="year-compare-table"></div>
   </div>
 </div>
 
-<!-- TAB 4: 연도별 트렌드 -->
+<!-- TAB 6: 트렌드 (기존) -->
 <div id="tab-trend" class="tab-content">
   <div class="card">
     <div class="card-title">📅 연도별 카테고리별 셀아웃 트렌드 (YoY 성장률)</div>
@@ -211,6 +295,38 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
     <div class="card-title">🏆 카테고리별 모델 믹스 현황 (2025~2026 누계)</div>
     <div class="chips" id="trend-cat-chips"></div>
     <div id="model-mix-detail"></div>
+  </div>
+</div>
+
+<!-- TAB 7: 백테스트 (Coming Soon) -->
+<div id="tab-backtest" class="tab-content">
+  <div class="card">
+    <div class="coming-soon">
+      <h2>🔬 실적 vs 예측 백테스트</h2>
+      <p style="font-size:16px;color:#0f3460;font-weight:700;margin-bottom:16px">Coming Soon</p>
+      <div style="max-width:500px;margin:0 auto;text-align:left">
+        <div class="info-box" style="font-size:13px">
+          <strong>이 기능이 활성화되면:</strong><br><br>
+          📊 시뮬레이터에서 생성한 <strong>예측값</strong>과 실제 <strong>판매 실적</strong>을 자동 비교<br><br>
+          📈 예측 정확도(MAPE) 측정 → 성장률 가정 자동 보정<br><br>
+          🎯 카테고리별/채널별 예측 오차율 분석<br><br>
+          📅 주간/월간 단위 백테스트 리포트 생성
+        </div>
+        <div class="warn-box" style="font-size:13px;margin-top:12px">
+          <strong>⏳ 전제조건:</strong><br>
+          시뮬레이터에서 생성한 예측값이 최소 <strong>1~2개월 축적</strong>되어야 백테스트가 의미 있습니다.<br>
+          현재는 비교할 과거 예측값이 없으므로, 시뮬레이터를 활발히 사용한 후 텔레그램으로<br>
+          <code>"백테스트 활성화해줘"</code> 명령을 보내주세요!
+        </div>
+        <div style="margin-top:20px;text-align:center">
+          <div style="display:inline-block;padding:12px 24px;background:#f0f2f5;border-radius:8px;border:2px dashed #ccc">
+            <span style="font-size:32px">📱</span>
+            <div style="font-size:12px;color:#888;margin-top:4px">텔레그램으로 활성화 요청</div>
+            <div style="font-size:11px;color:#aaa;margin-top:2px">"백테스트 활성화해줘"</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -227,11 +343,13 @@ const YOY = _DATA.yoy_growth;
 const ACTUAL_2026 = _DATA.actual_2026;
 const ACTUAL_2024 = _DATA.actual_2024;
 const ACTUAL_2025 = _DATA.actual_2025;
+const ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const ACTUAL_MONTHS = ['Jan','Feb','Mar'];
 
-let mixResults = null;  // Store last distribution result
+let mixResults = null;
 
-// ─── Inspect (점검 필요) highlight ────────────────────────────────────────────
-let inspectModels = {};  // key: "cat|model" → true
+// ─── Inspect (점검 필요) highlight ─────────────────────────────────────────
+let inspectModels = {};
 try { const s = localStorage.getItem('inspectModels'); if(s) inspectModels = JSON.parse(s); } catch(e){}
 
 function toggleInspect(cat, model, event) {
@@ -240,7 +358,6 @@ function toggleInspect(cat, model, event) {
   if (inspectModels[key]) { delete inspectModels[key]; }
   else { inspectModels[key] = true; }
   try { localStorage.setItem('inspectModels', JSON.stringify(inspectModels)); } catch(e){}
-  // Re-apply classes to all matching rows
   document.querySelectorAll(`tr[data-inspect-key="${CSS.escape(key)}"]`).forEach(tr => {
     tr.classList.toggle('inspect-row', !!inspectModels[key]);
   });
@@ -252,32 +369,87 @@ function clearInspect() {
   document.querySelectorAll('tr.inspect-row').forEach(tr => tr.classList.remove('inspect-row'));
 }
 
-function getInspectCount() {
-  return Object.keys(inspectModels).length;
+function getInspectCount() { return Object.keys(inspectModels).length; }
+
+// ─── NEW: Seasonality Index (2024+2025 average) ──────────────────────────
+function getSeasonalityIndex() {
+  const index = {};
+  CATEGORIES.forEach(cat => {
+    index[cat] = {};
+    const d24 = ACTUAL_2024[cat] || {};
+    const d25 = ACTUAL_2025[cat] || {};
+
+    // Calculate average monthly values from both years
+    const monthlyAvg = {};
+    let totalAvg = 0;
+    ALL_MONTHS.forEach(m => {
+      const v24 = d24[m] || 0;
+      const v25 = d25[m] || 0;
+      const count = (v24 > 0 ? 1 : 0) + (v25 > 0 ? 1 : 0);
+      monthlyAvg[m] = count > 0 ? (v24 + v25) / count : 0;
+      totalAvg += monthlyAvg[m];
+    });
+
+    // Calculate seasonal index (monthly share of annual)
+    ALL_MONTHS.forEach(m => {
+      index[cat][m] = totalAvg > 0 ? (monthlyAvg[m] / totalAvg) * 12 : 1.0;
+    });
+  });
+  return index;
+}
+
+function buildSeasonChart() {
+  const idx = getSeasonalityIndex();
+  let html = '<div class="tbl-wrap"><table><thead><tr><th>Category</th>';
+  ALL_MONTHS.forEach(m => html += '<th>' + m + '</th>');
+  html += '<th>비고</th></tr></thead><tbody>';
+
+  CATEGORIES.forEach(cat => {
+    html += '<tr><td>' + cat + '</td>';
+    let peakMonth = '', peakVal = 0;
+    ALL_MONTHS.forEach(m => {
+      const v = idx[cat][m];
+      if (v > peakVal) { peakVal = v; peakMonth = m; }
+      let bg = '#fff', color = '#333';
+      if (v >= 1.5) { bg = '#e74c3c'; color = '#fff'; }
+      else if (v >= 1.2) { bg = '#f39c12'; color = '#fff'; }
+      else if (v >= 0.8) { bg = '#e8f5e9'; color = '#2e7d32'; }
+      else if (v > 0) { bg = '#e3f2fd'; color = '#1565c0'; }
+      else { bg = '#f5f5f5'; color = '#999'; }
+      const barH = Math.max(2, Math.round(v * 20));
+      html += '<td class="num" style="background:' + bg + ';color:' + color + ';font-weight:600">' + v.toFixed(2) + '<br><div class="season-bar" style="width:30px;height:' + barH + 'px;background:' + (v >= 1.0 ? '#27ae60' : '#e74c3c') + '"></div></td>';
+    });
+    html += '<td style="font-size:11px">성수기: <strong>' + peakMonth + '</strong> (' + peakVal.toFixed(1) + 'x)</td></tr>';
+  });
+
+  html += '</tbody></table></div>';
+  html += '<div style="font-size:11px;color:#888;margin-top:6px">※ 지수 해석: 1.0 = 평균 수준, 1.5 = 평균 대비 50% 높은 성수기, 0.5 = 평균 대비 50% 낮은 비수기</div>';
+  document.getElementById('season-chart').innerHTML = html;
 }
 
 // ─── Tab switch ─────────────────────────────────────────────────────────────
+const TAB_IDS = ['mix','sim','scenario','order','annual','trend','backtest'];
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => {
-    const ids = ['mix','sim','annual','trend'];
-    t.classList.toggle('active', ids[i] === name);
+    t.classList.toggle('active', TAB_IDS[i] === name);
   });
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if (name === 'mix') {
+    buildSeasonChart();
     if (!document.querySelector('#annual-target-area .input-item, #annual-target-area > div')) buildAnnualTargetInputs();
     if (!document.querySelector('#mix-input-area .input-grid')) buildMixInputs();
   }
-  if (name === 'sim' && !document.querySelector('#stock-summary table')) buildSimTab();
+  if (name === 'sim') { if (!document.querySelector('#stock-summary table')) buildSimTab(); buildWOSAlerts(); }
   if (name === 'annual') buildAnnualTab();
   if (name === 'trend') buildTrendTab();
+  if (name === 'order') buildOrderTab();
 }
 
-// ─── TAB 1: ANNUAL TARGET → MONTHLY DISTRIBUTION ────────────────────────────
+// ─── TAB 1: ANNUAL TARGET → MONTHLY DISTRIBUTION (enhanced with 2yr avg) ──
 function buildAnnualTargetInputs() {
   const area = document.getElementById('annual-target-area');
   if (!area) return;
-  const allMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">';
   CATEGORIES.forEach(cat => {
     const actual = ACTUAL_2026[cat] || {};
@@ -317,21 +489,16 @@ function previewAnnualTarget(cat) {
 }
 
 function applyAnnualTarget() {
-  // 2025 Apr~Dec 계절성 가중치 계산
+  // Enhanced: Use 2024+2025 average seasonality
+  const seasonIdx = getSeasonalityIndex();
   const seasonWeights = {};
   CATEGORIES.forEach(cat => {
-    const act25 = ACTUAL_2025[cat] || {};
-    const futureTotal = FUTURE_MONTHS.reduce((s, m) => s + (act25[m] || 0), 0);
-    if (futureTotal > 0) {
-      seasonWeights[cat] = {};
-      FUTURE_MONTHS.forEach(m => {
-        seasonWeights[cat][m] = (act25[m] || 0) / futureTotal;
-      });
-    } else {
-      // 2025 데이터 없으면 균등 분배
-      seasonWeights[cat] = {};
-      FUTURE_MONTHS.forEach(m => { seasonWeights[cat][m] = 1 / FUTURE_MONTHS.length; });
-    }
+    const idx = seasonIdx[cat];
+    const futureTotal = FUTURE_MONTHS.reduce((s, m) => s + (idx[m] || 1), 0);
+    seasonWeights[cat] = {};
+    FUTURE_MONTHS.forEach(m => {
+      seasonWeights[cat][m] = (idx[m] || 1) / futureTotal;
+    });
   });
 
   let applied = 0;
@@ -341,7 +508,6 @@ function applyAnnualTarget() {
     const el = document.getElementById(`annual-${cat}`);
     const annual = parseInt(el?.value || '0') || 0;
     if (annual <= 0) return;
-
     const actual = ACTUAL_2026[cat] || {};
     const q1 = (actual.Jan||0) + (actual.Feb||0) + (actual.Mar||0);
     const remaining = Math.max(0, annual - q1);
@@ -363,17 +529,13 @@ function applyAnnualTarget() {
     applied++;
   });
 
-  if (applied === 0) {
-    alert('연간 목표를 먼저 입력해주세요!');
-    return;
-  }
+  if (applied === 0) { alert('연간 목표를 먼저 입력해주세요!'); return; }
 
-  // 미리보기 표시
   const preview = document.getElementById('annual-target-preview');
   if (preview) {
     preview.style.display = 'block';
     preview.innerHTML = `
-      <div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:8px;">📋 월별 분배 결과 (2025 계절성 기반)</div>
+      <div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:8px;">📋 월별 분배 결과 (2024+2025 평균 계절성 기반)</div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>카테고리</th><th>연간 목표</th><th>Q1 실적</th><th>Apr~Dec 분배량</th>${FUTURE_MONTHS.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
         <tbody>${previewRows.join('')}</tbody>
@@ -381,21 +543,19 @@ function applyAnnualTarget() {
       <div style="font-size:11px;color:#888;margin-top:6px;">※ STEP 1 입력값에 자동 반영됨. 개별 수정 후 [모델별 자동 분배] 클릭하세요.</div>
     `;
   }
-  alert(`✅ ${applied}개 카테고리 월별 분배 완료!\n[STEP 1] 입력값을 확인 후 [모델별 자동 분배]를 클릭하세요.`);
+  alert(`✅ ${applied}개 카테고리 월별 분배 완료! (2개년 계절성 반영)\n[STEP 1] 입력값을 확인 후 [모델별 자동 분배]를 클릭하세요.`);
 }
 
 function clearAnnualTargets() {
   CATEGORIES.forEach(cat => {
-    const el = document.getElementById(`annual-${cat}`);
-    if (el) el.value = '';
-    const prev = document.getElementById(`annual-preview-${cat}`);
-    if (prev) prev.textContent = '';
+    const el = document.getElementById(`annual-${cat}`); if (el) el.value = '';
+    const prev = document.getElementById(`annual-preview-${cat}`); if (prev) prev.textContent = '';
   });
   const preview = document.getElementById('annual-target-preview');
   if (preview) preview.style.display = 'none';
 }
 
-// ─── TAB 1: MODEL MIX ───────────────────────────────────────────────────────
+// ─── TAB 1: MODEL MIX ────────────────────────────────────────────────────
 function buildMixInputs() {
   const area = document.getElementById('mix-input-area');
   let html = '';
@@ -408,10 +568,7 @@ function buildMixInputs() {
       </div>
       <div class="input-grid">`;
     FUTURE_MONTHS.forEach(m => {
-      html += `<div class="input-item">
-        <label>${m}</label>
-        <input type="number" id="mix-${cat}-${m}" placeholder="0" min="0" value="">
-      </div>`;
+      html += `<div class="input-item"><label>${m}</label><input type="number" id="mix-${cat}-${m}" placeholder="0" min="0" value=""></div>`;
     });
     html += `</div></div>`;
   });
@@ -419,15 +576,10 @@ function buildMixInputs() {
 }
 
 function applyAutoTrend() {
-  // Fill inputs using YoY growth from 2025 actual
-  // We approximate 2025 monthly from the YoY data
-  // Strategy: use Mar 2026 actual as base, apply seasonal pattern from 2025 growth
-  const apr2026_basis = {};
   CATEGORIES.forEach(cat => {
     const actual = ACTUAL_2026[cat] || {};
     const mar = actual.Mar || 0;
     const yoy = YOY[cat] || {};
-    apr2026_basis[cat] = mar;
     FUTURE_MONTHS.forEach(m => {
       const growth = yoy[m] || 1.0;
       const base = mar || 100;
@@ -436,11 +588,10 @@ function applyAutoTrend() {
       if (el && !el.value) el.value = est || '';
     });
   });
-  alert('YoY 트렌드 자동 채우기 완료!\n2026년 3월 실적 × 월별 YoY 성장률(2024→2025)로 추정했습니다.\n값을 직접 수정하셔도 됩니다.');
+  alert('YoY 트렌드 자동 채우기 완료!');
 }
 
 function runMixDistribution() {
-  // Collect inputs
   const input = {};
   CATEGORIES.forEach(cat => {
     input[cat] = {};
@@ -450,47 +601,31 @@ function runMixDistribution() {
       if (v > 0) input[cat][m] = v;
     });
   });
-
-  // Check if any input
   const hasInput = Object.values(input).some(ci => Object.values(ci).some(v => v > 0));
-  if (!hasInput) {
-    alert('수량을 입력해주세요!');
-    return;
-  }
+  if (!hasInput) { alert('수량을 입력해주세요!'); return; }
 
-  // Distribute to models
   mixResults = {};
   CATEGORIES.forEach(cat => {
     const models = MODEL_MIX[cat] || [];
     const chMix = CHANNEL_MIX[cat] || {};
     mixResults[cat] = {};
-
     FUTURE_MONTHS.forEach(m => {
       const total = input[cat][m] || 0;
       if (total === 0) return;
       mixResults[cat][m] = {
         total,
         models: models.map(model => ({
-          model: model.model,
-          btu: model.btu,
-          comp: model.comp,
-          type: model.type,
-          qty: Math.round(total * model.pct / 100),
-          pct: model.pct,
+          model: model.model, btu: model.btu, comp: model.comp, type: model.type,
+          qty: Math.round(total * model.pct / 100), pct: model.pct,
         })),
-        channels: Object.entries(chMix).map(([ch, pct]) => ({
-          ch, pct,
-          qty: Math.round(total * pct / 100)
-        }))
+        channels: Object.entries(chMix).map(([ch, pct]) => ({ ch, pct, qty: Math.round(total * pct / 100) }))
       };
     });
   });
-
   renderMixResults();
 }
 
 function renderMixResults() {
-  // Build category chips
   const activeCats = CATEGORIES.filter(cat =>
     Object.values(mixResults[cat] || {}).some(v => v && v.total > 0)
   );
@@ -509,34 +644,23 @@ function renderMixResults() {
 function selectMixCat(cat, el) {
   document.querySelectorAll('#mix-cat-chips .chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
-
   const data = mixResults[cat] || {};
   const activeMonths = FUTURE_MONTHS.filter(m => data[m]);
   if (activeMonths.length === 0) { document.getElementById('mix-result-table').innerHTML = '<p style="color:#999">데이터 없음</p>'; return; }
 
-  // Collect all models across months
   const allModels = new Set();
-  activeMonths.forEach(m => {
-    (data[m]?.models || []).forEach(r => allModels.add(r.model));
-  });
-
-  // Build table
+  activeMonths.forEach(m => (data[m]?.models || []).forEach(r => allModels.add(r.model)));
   const inspectCnt = getInspectCount();
   let html = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-    <span style="font-size:12px;color:#888;">⭐ 행을 클릭하면 점검 필요 표시 (노란 하이라이트)</span>
-    ${inspectCnt>0 ? `<button class="btn btn-warn" style="padding:4px 10px;font-size:11px;" onclick="clearInspect()">🗑️ 점검 표시 전체 초기화 (${inspectCnt}개)</button>` : ''}
+    <span style="font-size:12px;color:#888;">⭐ 행을 클릭하면 점검 필요 표시</span>
+    ${inspectCnt>0 ? `<button class="btn btn-warn" style="padding:4px 10px;font-size:11px;" onclick="clearInspect()">🗑️ 전체 초기화 (${inspectCnt}개)</button>` : ''}
   </div>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th style="width:28px"></th><th>Model</th><th>BTU</th><th>Comp</th><th>Type</th>`;
+  <div class="tbl-wrap"><table><thead><tr><th style="width:28px"></th><th>Model</th><th>BTU</th><th>Comp</th><th>Type</th>`;
   activeMonths.forEach(m => html += `<th>${m}<br><span style="font-size:10px;font-weight:400">${fmt(data[m].total)}</span></th>`);
   html += `<th>합계</th><th>기여율</th></tr></thead><tbody>`;
 
-  // Grand total per month
-  const grandTotal = {};
-  activeMonths.forEach(m => grandTotal[m] = data[m].total);
+  const grandTotal = {}; activeMonths.forEach(m => grandTotal[m] = data[m].total);
   const grandSum = Object.values(grandTotal).reduce((a,b)=>a+b,0);
-
-  // Sort models by total qty
   const modelTotals = {};
   allModels.forEach(model => {
     modelTotals[model] = activeMonths.reduce((sum, m) => {
@@ -553,44 +677,35 @@ function selectMixCat(cat, el) {
     const ikey = cat + '|' + model;
     const isInspect = !!inspectModels[ikey];
     html += `<tr class="${isInspect?'inspect-row':''}" data-inspect-key="${ikey}" onclick="toggleInspect('${cat.replace(/'/g,"\\'")}','${model.replace(/'/g,"\\'")}',event)" style="cursor:pointer">`;
-    html += `<td><button class="inspect-btn" title="점검 필요 표시">${isInspect?'⭐':'☆'}</button></td>`;
-    html += `<td>${model}</td><td>${info.btu||''}</td><td>${info.comp||''}</td><td>${info.type||''}`;
-    html += `</td>`;
+    html += `<td><button class="inspect-btn">${isInspect?'⭐':'☆'}</button></td>`;
+    html += `<td>${model}</td><td>${info.btu||''}</td><td>${info.comp||''}</td><td>${info.type||''}</td>`;
     activeMonths.forEach(m => {
       const r = (data[m]?.models||[]).find(x=>x.model===model);
       html += `<td class="num">${fmt(r?.qty||0)}</td>`;
     });
     const barW = grandSum>0 ? Math.max(2, Math.round(total/grandSum*100)) : 0;
-    html += `<td class="num">${fmt(total)}</td>`;
-    html += `<td><span class="bar" style="width:${barW}px"></span> ${pct}%</td></tr>`;
+    html += `<td class="num">${fmt(total)}</td><td><span class="bar" style="width:${barW}px"></span> ${pct}%</td></tr>`;
   });
 
-  // Total row
-  html += `<tr style="font-weight:700;background:#f0f4ff">
-    <td colspan="4">합계</td>`;
+  html += `<tr style="font-weight:700;background:#f0f4ff"><td colspan="5">합계</td>`;
   activeMonths.forEach(m => html += `<td class="num">${fmt(grandTotal[m])}</td>`);
-  html += `<td class="num">${fmt(grandSum)}</td><td>100%</td></tr>`;
-  html += `</tbody></table></div>`;
+  html += `<td class="num">${fmt(grandSum)}</td><td>100%</td></tr></tbody></table></div>`;
   document.getElementById('mix-result-table').innerHTML = html;
 
-  // Channel distribution table
-  let chHtml = `<div class="tbl-wrap"><table>
-    <thead><tr><th>채널</th>`;
+  // Channel distribution
+  let chHtml = `<div class="tbl-wrap"><table><thead><tr><th>채널</th>`;
   activeMonths.forEach(m => chHtml += `<th>${m}</th>`);
   chHtml += `<th>합계</th><th>기여율</th></tr></thead><tbody>`;
-
   const allChannels = new Set();
   activeMonths.forEach(m => (data[m]?.channels||[]).forEach(r => allChannels.add(r.ch)));
   const chTotals = {};
   allChannels.forEach(ch => {
     chTotals[ch] = activeMonths.reduce((sum,m) => {
-      const r=(data[m]?.channels||[]).find(x=>x.ch===ch);
-      return sum+(r?.qty||0);
+      const r=(data[m]?.channels||[]).find(x=>x.ch===ch); return sum+(r?.qty||0);
     },0);
   });
   const sortedCh = [...allChannels].sort((a,b)=>chTotals[b]-chTotals[a]);
   const chGrandSum = Object.values(chTotals).reduce((a,b)=>a+b,0);
-
   sortedCh.forEach(ch => {
     const total = chTotals[ch];
     const pct = chGrandSum>0?(total/chGrandSum*100).toFixed(1):'0';
@@ -602,86 +717,94 @@ function selectMixCat(cat, el) {
       chHtml += `<td class="num">${fmt(r?.qty||0)}</td>`;
     });
     const barW = chGrandSum>0?Math.max(2,Math.round(total/chGrandSum*100)):0;
-    chHtml += `<td class="num">${fmt(total)}</td>`;
-    chHtml += `<td><span class="bar" style="width:${barW}px"></span> ${pct}%</td></tr>`;
+    chHtml += `<td class="num">${fmt(total)}</td><td><span class="bar" style="width:${barW}px"></span> ${pct}%</td></tr>`;
   });
   chHtml += `<tr style="font-weight:700;background:#f0f4ff"><td>합계</td>`;
-  activeMonths.forEach(m => {
-    const t=(data[m]?.channels||[]).reduce((s,r)=>s+r.qty,0);
-    chHtml += `<td class="num">${fmt(t)}</td>`;
-  });
-  chHtml += `<td class="num">${fmt(chGrandSum)}</td><td>100%</td></tr>`;
-  chHtml += `</tbody></table></div>`;
+  activeMonths.forEach(m => { const t=(data[m]?.channels||[]).reduce((s,r)=>s+r.qty,0); chHtml += `<td class="num">${fmt(t)}</td>`; });
+  chHtml += `<td class="num">${fmt(chGrandSum)}</td><td>100%</td></tr></tbody></table></div>`;
   document.getElementById('mix-channel-table').innerHTML = chHtml;
 }
 
-function exportMixCSV() {
-  if (!mixResults) { alert('먼저 분배 실행을 해주세요!'); return; }
-  let csv = 'Category,Model,BTU,Compressor,Type';
-  FUTURE_MONTHS.forEach(m => csv += `,${m}`);
-  csv += ',Total\n';
-  CATEGORIES.forEach(cat => {
-    const data = mixResults[cat] || {};
-    const activeMonths = FUTURE_MONTHS.filter(m => data[m]);
-    if (activeMonths.length === 0) return;
-    const allModels = new Set();
-    activeMonths.forEach(m => (data[m]?.models||[]).forEach(r => allModels.add(r.model)));
-    allModels.forEach(model => {
-      const info = (MODEL_MIX[cat]||[]).find(x=>x.model===model)||{};
-      let row = `"${cat}","${model}","${info.btu||''}","${info.comp||''}","${info.type||''}"`;
-      let total = 0;
-      FUTURE_MONTHS.forEach(m => {
-        const r = (data[m]?.models||[]).find(x=>x.model===model);
-        const q = r?.qty||0;
-        row += `,${q}`; total += q;
-      });
-      row += `,${total}`;
-      csv += row + '\n';
-    });
+// ─── TAB 2: CHANNEL SIM + WOS ALERTS ───────────────────────────────────────
+function getWOSSignal(wos, opp, healthy) {
+  if (wos === 0) return { label: 'INACTIVE', color: '#9e9e9e', cls: 'signal-gray' };
+  if (wos < opp) return { label: 'SHORTAGE', color: '#e74c3c', cls: 'signal-red' };
+  if (wos < healthy) return { label: 'OPPORTUNITY', color: '#f39c12', cls: 'signal-yellow' };
+  if (wos < healthy * 2) return { label: 'HEALTHY', color: '#27ae60', cls: 'signal-green' };
+  return { label: 'OVERSTOCK', color: '#3498db', cls: 'signal-blue' };
+}
+
+function buildWOSAlerts() {
+  let alerts = [];
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch];
+    if (!s) return;
+    const sig = getWOSSignal(s.wos, s.wos_opportunity, s.wos_healthy);
+    if (sig.label === 'SHORTAGE' || sig.label === 'OVERSTOCK') {
+      alerts.push({ ch, ...s, signal: sig });
+    }
   });
-  downloadCSV(csv, 'ModelMix_Distribution.csv');
+
+  let html = '';
+  if (alerts.length === 0) {
+    html = '<div class="success-box">✅ 모든 채널 WOS가 정상 범위 내입니다.</div>';
+  } else {
+    const shortages = alerts.filter(a => a.signal.label === 'SHORTAGE');
+    const overstocks = alerts.filter(a => a.signal.label === 'OVERSTOCK');
+    if (shortages.length > 0) {
+      html += '<div class="alert-box">🚨 <strong>재고 부족 경보:</strong> ';
+      html += shortages.map(a => `<strong>${a.ch}</strong> (${a.wos}W < ${a.wos_opportunity}W 기준)`).join(', ');
+      html += '</div>';
+    }
+    if (overstocks.length > 0) {
+      html += '<div class="warn-box">📦 <strong>과재고 주의:</strong> ';
+      html += overstocks.map(a => `<strong>${a.ch}</strong> (${a.wos}W > ${a.wos_healthy*2}W)`).join(', ');
+      html += '</div>';
+    }
+  }
+
+  // Signal summary
+  html += '<div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">';
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch];
+    if (!s) return;
+    const sig = getWOSSignal(s.wos, s.wos_opportunity, s.wos_healthy);
+    html += `<div class="stat-box" style="border-left:4px solid ${sig.color}">
+      <div style="font-size:11px;font-weight:600;color:#555">${ch} <span class="badge badge-${s.group==='IR'?'blue':'green'}">${s.group}</span></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin:4px 0">
+        <span class="signal ${sig.cls}"></span>
+        <span class="val" style="color:${sig.color}">${s.wos}W</span>
+      </div>
+      <div class="lbl">${fmt(s.stock)} units</div>
+      <div style="font-size:10px;color:#888;margin-top:2px">기준: ${s.wos_opportunity}~${s.wos_healthy}W</div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('wos-alerts').innerHTML = html;
 }
 
-function clearMixInputs() {
-  CATEGORIES.forEach(cat => FUTURE_MONTHS.forEach(m => {
-    const el = document.getElementById(`mix-${cat}-${m}`);
-    if (el) el.value = '';
-  }));
-  document.getElementById('mix-result-card').style.display = 'none';
-  document.getElementById('mix-channel-card').style.display = 'none';
-  mixResults = null;
-}
-
-// ─── TAB 2: CHANNEL SIM ──────────────────────────────────────────────────────
 function buildSimTab() {
-  // Stock summary
   let html = `<div class="stat-grid">`;
   CHANNELS.forEach(ch => {
     const s = CHANNEL_STOCK[ch];
     if (!s) return;
-    const wos = s.wos;
-    const healthy = s.wos_healthy;
-    const opp = s.wos_opportunity;
-    let sig = wos === 0 ? 'INACTIVE' : wos < opp ? 'SHORTAGE' : wos < healthy ? 'OPPORTUNITY' : wos < healthy*2 ? 'HEALTHY' : 'OVERSTOCK';
-    const colors = {INACTIVE:'#9e9e9e',SHORTAGE:'#e74c3c',OPPORTUNITY:'#f39c12',HEALTHY:'#27ae60',OVERSTOCK:'#3498db'};
+    const sig = getWOSSignal(s.wos, s.wos_opportunity, s.wos_healthy);
     html += `<div class="stat-box">
       <div style="font-size:11px;font-weight:600;color:#555">${ch} <span class="badge badge-${s.group==='IR'?'blue':'green'}">${s.group}</span></div>
-      <div class="val" style="color:${colors[sig]}">${wos}W</div>
+      <div class="val" style="color:${sig.color}">${s.wos}W</div>
       <div class="lbl">${fmt(s.stock)} units</div>
-      <div><span class="trend ${sig==='HEALTHY'?'up':sig==='SHORTAGE'?'dn':'flat'}">${sig}</span></div>
+      <div><span class="trend ${sig.label==='HEALTHY'?'up':sig.label==='SHORTAGE'?'dn':'flat'}">${sig.label}</span></div>
     </div>`;
   });
   html += `</div>`;
   document.getElementById('stock-summary').innerHTML = html;
 
-  // Sim input
   let sinput = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Channel</th><th>Group</th><th>Current Stock</th><th>WOS</th>`;
-  FUTURE_MONTHS.forEach(m => sinput += `<th>${m}<br><small>Sell Thru</small></th>`);
+    <thead><tr><th>Channel</th><th>Group</th><th>Stock</th><th>WOS</th>`;
+  FUTURE_MONTHS.forEach(m => sinput += `<th>${m}</th>`);
   sinput += `</tr></thead><tbody>`;
   CHANNELS.forEach(ch => {
-    const s = CHANNEL_STOCK[ch];
-    if (!s) return;
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
     sinput += `<tr><td>${ch}</td><td>${s.group}</td><td class="num">${fmt(s.stock)}</td><td class="num">${s.wos}W</td>`;
     FUTURE_MONTHS.forEach(m => {
       sinput += `<td><input type="number" id="sim-${ch}-${m}" style="width:70px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px" min="0" value=""></td>`;
@@ -693,10 +816,8 @@ function buildSimTab() {
 }
 
 function fillTargetWOS() {
-  // Fill based on HEALTHY WOS target: monthly sell thru = stock / (healthy_wos/4.33)
   CHANNELS.forEach(ch => {
-    const s = CHANNEL_STOCK[ch];
-    if (!s) return;
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
     const monthly = Math.round(s.stock / (s.wos_healthy / 4.33));
     FUTURE_MONTHS.forEach(m => {
       const el = document.getElementById(`sim-${ch}-${m}`);
@@ -706,52 +827,255 @@ function fillTargetWOS() {
 }
 
 function runSimulation() {
-  let html = `<div style="margin-top:12px"><div class="card-title">📊 시뮬레이션 결과 — 월말 예상 WOS</div>
+  let html = `<div style="margin-top:12px"><div class="card-title">📊 시뮬레이션 결과 — 월말 예상 WOS + 🚦 신호등</div>
     <div class="tbl-wrap"><table>
     <thead><tr><th>Channel</th>`;
   FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>End WOS</small></th>`);
-  html += `<th>Target WOS</th></tr></thead><tbody>`;
+  html += `<th>Target</th></tr></thead><tbody>`;
 
   CHANNELS.forEach(ch => {
-    const s = CHANNEL_STOCK[ch];
-    if (!s) return;
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
     let stock = s.stock;
     html += `<tr><td>${ch}</td>`;
     FUTURE_MONTHS.forEach(m => {
       const el = document.getElementById(`sim-${ch}-${m}`);
       const sellthru = parseInt(el?.value || 0) || 0;
-      const sellout_approx = sellthru; // simplified
       stock = Math.max(0, stock - sellthru);
-      const wos = sellout_approx > 0 ? (stock / (sellout_approx / 4.33)) : 0;
-      const healthy = s.wos_healthy;
-      const opp = s.wos_opportunity;
-      let color = wos === 0 ? '#9e9e9e' : wos < opp ? '#e74c3c' : wos < healthy ? '#f39c12' : wos < healthy*2 ? '#27ae60' : '#3498db';
-      html += `<td class="num" style="color:${color};font-weight:600">${wos.toFixed(1)}W</td>`;
+      const wos = sellthru > 0 ? (stock / (sellthru / 4.33)) : 0;
+      const sig = getWOSSignal(wos, s.wos_opportunity, s.wos_healthy);
+      html += `<td class="num" style="font-weight:600"><span class="signal ${sig.cls}"></span><span style="color:${sig.color}">${wos.toFixed(1)}W</span></td>`;
     });
-    html += `<td class="num">${s.wos_healthy}W (HEALTHY)</td></tr>`;
+    html += `<td class="num">${s.wos_healthy}W</td></tr>`;
   });
   html += `</tbody></table></div></div>`;
   document.getElementById('sim-result').innerHTML = html;
 }
 
-function exportSimCSV() {
-  let csv = 'Channel,Group,Month,Sell_Thru_Target\n';
-  CHANNELS.forEach(ch => {
-    const s = CHANNEL_STOCK[ch];
-    FUTURE_MONTHS.forEach(m => {
-      const el = document.getElementById(`sim-${ch}-${m}`);
-      const v = el?.value || 0;
-      csv += `${ch},${s?.group||''},${m},${v}
-`;
+// ─── TAB 3: SCENARIO COMPARISON (NEW) ──────────────────────────────────────
+function runScenarioComparison() {
+  const optDelta = (parseInt(document.getElementById('sc-opt-delta')?.value) || 10) / 100;
+  const conDelta = (parseInt(document.getElementById('sc-con-delta')?.value) || 10) / 100;
+
+  let html = '';
+  CATEGORIES.forEach(cat => {
+    const actual = ACTUAL_2026[cat] || {};
+    const d25 = ACTUAL_2025[cat] || {};
+    const yoy = YOY[cat] || {};
+
+    html += `<div class="card"><div class="card-title">${cat}</div>`;
+    html += `<div class="tbl-wrap"><table><thead>
+      <tr><th rowspan="2">Month</th><th colspan="2" style="background:#2e7d32;color:#fff">🟢 낙관</th><th colspan="2" style="background:#0f3460">🔵 기본</th><th colspan="2" style="background:#b71c1c;color:#fff">🔴 보수</th><th>신뢰구간</th></tr>
+      <tr><th class="sc-opt-bg">Sell Out</th><th class="sc-opt-bg">누적</th><th class="sc-base-bg">Sell Out</th><th class="sc-base-bg">누적</th><th class="sc-con-bg">Sell Out</th><th class="sc-con-bg">누적</th><th>밴드 폭</th></tr>
+    </thead><tbody>`;
+
+    let cumOpt = 0, cumBase = 0, cumCon = 0;
+    // Q1 actuals
+    ACTUAL_MONTHS.forEach(m => {
+      const v = actual[m] || 0;
+      cumOpt += v; cumBase += v; cumCon += v;
+      html += `<tr style="background:#f8f8f8"><td>${m} (실적)</td>
+        <td class="num">${fmt(v)}</td><td class="num">${fmt(cumOpt)}</td>
+        <td class="num">${fmt(v)}</td><td class="num">${fmt(cumBase)}</td>
+        <td class="num">${fmt(v)}</td><td class="num">${fmt(cumCon)}</td>
+        <td class="num">-</td></tr>`;
     });
+
+    // Future months
+    FUTURE_MONTHS.forEach(m => {
+      const base25 = d25[m] || 0;
+      const growth = yoy[m] || 1.0;
+      const baseVal = Math.round(base25 * growth);
+      const optVal = Math.round(baseVal * (1 + optDelta));
+      const conVal = Math.round(baseVal * (1 - conDelta));
+      cumOpt += optVal; cumBase += baseVal; cumCon += conVal;
+      const bandWidth = optVal - conVal;
+      html += `<tr>
+        <td>${m}</td>
+        <td class="num sc-opt-bg sc-optimistic" style="font-weight:600">${fmt(optVal)}</td>
+        <td class="num sc-opt-bg">${fmt(cumOpt)}</td>
+        <td class="num sc-base-bg sc-base" style="font-weight:600">${fmt(baseVal)}</td>
+        <td class="num sc-base-bg">${fmt(cumBase)}</td>
+        <td class="num sc-con-bg sc-conservative" style="font-weight:600">${fmt(conVal)}</td>
+        <td class="num sc-con-bg">${fmt(cumCon)}</td>
+        <td class="num" style="font-size:11px;color:#888">±${fmt(Math.round(bandWidth/2))}</td>
+      </tr>`;
+    });
+
+    // Annual total
+    html += `<tr style="font-weight:700;background:#f0f4ff">
+      <td>연간 합계</td>
+      <td class="num sc-optimistic">${fmt(cumOpt)}</td><td></td>
+      <td class="num sc-base">${fmt(cumBase)}</td><td></td>
+      <td class="num sc-conservative">${fmt(cumCon)}</td><td></td>
+      <td class="num" style="font-size:11px">범위: ${fmt(cumCon)}~${fmt(cumOpt)}</td>
+    </tr>`;
+    html += `</tbody></table></div>`;
+
+    // SVG confidence band visualization
+    const svgW = 600, svgH = 120, padL = 40, padR = 10, padT = 10, padB = 25;
+    const chartW = svgW - padL - padR, chartH = svgH - padT - padB;
+    let allVals = [];
+    let optSeries = [], baseSeries = [], conSeries = [];
+    let co = 0, cb = 0, cc = 0;
+    ACTUAL_MONTHS.forEach(m => {
+      const v = actual[m] || 0;
+      co += v; cb += v; cc += v;
+      optSeries.push(co); baseSeries.push(cb); conSeries.push(cc);
+      allVals.push(co, cb, cc);
+    });
+    FUTURE_MONTHS.forEach(m => {
+      const base25 = d25[m] || 0;
+      const growth = yoy[m] || 1.0;
+      const baseVal = Math.round(base25 * growth);
+      co += Math.round(baseVal * (1 + optDelta));
+      cb += baseVal;
+      cc += Math.round(baseVal * (1 - conDelta));
+      optSeries.push(co); baseSeries.push(cb); conSeries.push(cc);
+      allVals.push(co, cb, cc);
+    });
+    const maxV = Math.max(...allVals, 1);
+    const n = ALL_MONTHS.length;
+    function px(i) { return padL + (i / (n-1)) * chartW; }
+    function py(v) { return padT + chartH - (v / maxV) * chartH; }
+
+    let bandPath = '';
+    for (let i = 0; i < n; i++) bandPath += (i===0?'M':'L') + px(i) + ',' + py(optSeries[i]);
+    for (let i = n-1; i >= 0; i--) bandPath += 'L' + px(i) + ',' + py(conSeries[i]);
+    bandPath += 'Z';
+    let optPath = optSeries.map((v,i) => (i===0?'M':'L') + px(i) + ',' + py(v)).join('');
+    let basePath = baseSeries.map((v,i) => (i===0?'M':'L') + px(i) + ',' + py(v)).join('');
+    let conPath = conSeries.map((v,i) => (i===0?'M':'L') + px(i) + ',' + py(v)).join('');
+
+    html += `<div style="margin-top:8px;overflow-x:auto">
+      <svg width="${svgW}" height="${svgH}" style="font-family:sans-serif;font-size:10px">
+        <path d="${bandPath}" class="band-fill"/>
+        <path d="${optPath}" class="band-upper"/>
+        <path d="${basePath}" class="band-line"/>
+        <path d="${conPath}" class="band-lower"/>
+        ${ALL_MONTHS.map((m,i) => `<text x="${px(i)}" y="${svgH-2}" text-anchor="middle" fill="#888">${m}</text>`).join('')}
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="#ddd"/>
+        <line x1="${padL}" y1="${padT+chartH}" x2="${svgW-padR}" y2="${padT+chartH}" stroke="#ddd"/>
+        <text x="${svgW-5}" y="${py(optSeries[n-1])+4}" fill="#27ae60" font-size="9" text-anchor="end">낙관 ${fmt(optSeries[n-1])}</text>
+        <text x="${svgW-5}" y="${py(baseSeries[n-1])+4}" fill="#0f3460" font-size="9" text-anchor="end">기본 ${fmt(baseSeries[n-1])}</text>
+        <text x="${svgW-5}" y="${py(conSeries[n-1])+4}" fill="#e74c3c" font-size="9" text-anchor="end">보수 ${fmt(conSeries[n-1])}</text>
+      </svg>
+    </div>`;
+    html += '</div>';
   });
-  downloadCSV(csv, 'Channel_SellThru_Sim.csv');
+
+  document.getElementById('scenario-result').innerHTML = html;
 }
 
-// ─── TAB 3: ANNUAL VIEW ──────────────────────────────────────────────────────
-const ACTUAL_MONTHS = ['Jan','Feb','Mar'];
-const ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let _scenarioData = null;
+function exportScenarioCSV() {
+  // Regenerate and export
+  const optDelta = (parseInt(document.getElementById('sc-opt-delta')?.value) || 10) / 100;
+  const conDelta = (parseInt(document.getElementById('sc-con-delta')?.value) || 10) / 100;
+  let csv = 'Category,Month,Optimistic,Base,Conservative\n';
+  CATEGORIES.forEach(cat => {
+    const actual = ACTUAL_2026[cat] || {};
+    const d25 = ACTUAL_2025[cat] || {};
+    const yoy = YOY[cat] || {};
+    ACTUAL_MONTHS.forEach(m => {
+      const v = actual[m] || 0;
+      csv += `"${cat}",${m},${v},${v},${v}\n`;
+    });
+    FUTURE_MONTHS.forEach(m => {
+      const base25 = d25[m] || 0;
+      const growth = yoy[m] || 1.0;
+      const baseVal = Math.round(base25 * growth);
+      csv += `"${cat}",${m},${Math.round(baseVal*(1+optDelta))},${baseVal},${Math.round(baseVal*(1-conDelta))}\n`;
+    });
+  });
+  downloadCSV(csv, 'Scenario_Comparison.csv');
+}
 
+// ─── TAB 4: ORDER QUANTITY REVERSE CALC (NEW) ──────────────────────────────
+function buildOrderTab() {
+  let html = '<div class="card"><div class="card-title">📦 채널별 목표 WOS 설정</div>';
+  html += '<div class="tbl-wrap"><table><thead><tr><th>Channel</th><th>Group</th><th>현재고</th><th>현재 WOS</th><th>목표 WOS (주)</th><th>예상 월 셀아웃</th></tr></thead><tbody>';
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const defaultSellout = Math.round(s.stock / (s.wos / 4.33)) || 0;
+    html += `<tr><td>${ch}</td><td>${s.group}</td><td class="num">${fmt(s.stock)}</td><td class="num">${s.wos}W</td>`;
+    html += `<td><input type="number" id="ord-wos-${ch}" value="${s.wos_healthy}" min="1" style="width:60px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px"></td>`;
+    html += `<td><input type="number" id="ord-sell-${ch}" value="${defaultSellout}" min="0" style="width:80px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px"></td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+  document.getElementById('order-input-area').innerHTML = html;
+}
+
+function runOrderCalc() {
+  let html = '<div class="card"><div class="card-title">📦 월별 필요 발주량 계산 결과</div>';
+  html += '<div class="info-box">공식: 필요재고 = 목표WOS × (예상월셀아웃 / 4.33) | 발주량 = 필요재고 - 현재고 + 월셀아웃</div>';
+  html += '<div class="tbl-wrap"><table><thead><tr><th>Channel</th><th>현재고</th><th>목표WOS</th><th>예상셀아웃/월</th>';
+  FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>발주 필요</small></th>`);
+  html += '<th>총 발주</th><th>상태</th></tr></thead><tbody>';
+
+  let totalOrders = {};
+  FUTURE_MONTHS.forEach(m => totalOrders[m] = 0);
+
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const targetWOS = parseInt(document.getElementById(`ord-wos-${ch}`)?.value) || s.wos_healthy;
+    const monthlySell = parseInt(document.getElementById(`ord-sell-${ch}`)?.value) || 0;
+
+    let stock = s.stock;
+    let totalOrder = 0;
+    html += `<tr><td>${ch}</td><td class="num">${fmt(stock)}</td><td class="num">${targetWOS}W</td><td class="num">${fmt(monthlySell)}</td>`;
+
+    FUTURE_MONTHS.forEach(m => {
+      stock = Math.max(0, stock - monthlySell);
+      const targetStock = Math.round(targetWOS * monthlySell / 4.33);
+      const orderQty = Math.max(0, targetStock - stock);
+      stock += orderQty;
+      totalOrder += orderQty;
+      totalOrders[m] += orderQty;
+      const bg = orderQty > 0 ? (orderQty > monthlySell ? '#ffebee' : '#fff9e6') : '#e8f5e9';
+      html += `<td class="num" style="background:${bg};font-weight:600">${orderQty > 0 ? fmt(orderQty) : '-'}</td>`;
+    });
+
+    const status = totalOrder === 0 ? '<span class="trend up">충분</span>' :
+                   totalOrder > s.stock ? '<span class="trend dn">대량 발주 필요</span>' :
+                   '<span class="trend flat">소량 발주</span>';
+    html += `<td class="num" style="font-weight:700">${fmt(totalOrder)}</td><td>${status}</td></tr>`;
+  });
+
+  // Total row
+  const grandTotal = Object.values(totalOrders).reduce((a,b)=>a+b,0);
+  html += '<tr style="font-weight:700;background:#f0f4ff"><td colspan="4">합계</td>';
+  FUTURE_MONTHS.forEach(m => html += `<td class="num">${fmt(totalOrders[m])}</td>`);
+  html += `<td class="num" style="font-size:14px">${fmt(grandTotal)}</td><td></td></tr>`;
+  html += '</tbody></table></div></div>';
+
+  document.getElementById('order-result').innerHTML = html;
+}
+
+function exportOrderCSV() {
+  let csv = 'Channel,Group,Current_Stock,Target_WOS,Monthly_Sellout';
+  FUTURE_MONTHS.forEach(m => csv += ',' + m + '_Order');
+  csv += ',Total_Order\n';
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const targetWOS = parseInt(document.getElementById(`ord-wos-${ch}`)?.value) || s.wos_healthy;
+    const monthlySell = parseInt(document.getElementById(`ord-sell-${ch}`)?.value) || 0;
+    let stock = s.stock, total = 0;
+    let row = `${ch},${s.group},${stock},${targetWOS},${monthlySell}`;
+    FUTURE_MONTHS.forEach(m => {
+      stock = Math.max(0, stock - monthlySell);
+      const targetStock = Math.round(targetWOS * monthlySell / 4.33);
+      const orderQty = Math.max(0, targetStock - stock);
+      stock += orderQty; total += orderQty;
+      row += ',' + orderQty;
+    });
+    row += ',' + total;
+    csv += row + '\n';
+  });
+  downloadCSV(csv, 'Order_Quantity_Calc.csv');
+}
+
+// ─── TAB 5: ANNUAL VIEW (same as v2) ──────────────────────────────────────
 function buildAnnualTab() {
   const rows = CATEGORIES.map(cat => {
     const actual = ACTUAL_2026[cat] || {};
@@ -770,15 +1094,14 @@ function buildAnnualTab() {
     return { cat, monthData, totalActual, totalSim, total: totalActual + totalSim };
   });
 
-  // Monthly table
   let html = '<div class="tbl-wrap"><table><thead><tr><th>Category</th>';
-  ACTUAL_MONTHS.forEach(m => html += `<th style="background:#1565c0">🟦 ${m}<br><small>실적</small></th>`);
-  FUTURE_MONTHS.forEach(m => html += `<th style="background:#2e7d32">🟩 ${m}<br><small>목표</small></th>`);
-  html += '<th>Q1 실적</th><th>Q2~Q4 목표</th><th>연간 합계</th></tr></thead><tbody>';
+  ACTUAL_MONTHS.forEach(m => html += `<th style="background:#1565c0">🟦 ${m}</th>`);
+  FUTURE_MONTHS.forEach(m => html += `<th style="background:#2e7d32">🟩 ${m}</th>`);
+  html += '<th>Q1</th><th>Q2~Q4</th><th>연간</th></tr></thead><tbody>';
 
-  const catTotals = { actual: {}, sim: {}, grand: {} };
-  ALL_MONTHS.forEach(m => { catTotals.actual[m] = 0; catTotals.sim[m] = 0; catTotals.grand[m] = 0; });
   let grandActual = 0, grandSim = 0;
+  const catTotals = { actual: {}, sim: {} };
+  ALL_MONTHS.forEach(m => { catTotals.actual[m] = 0; catTotals.sim[m] = 0; });
 
   rows.forEach(r => {
     html += `<tr><td style="font-weight:700">${r.cat}</td>`;
@@ -792,15 +1115,12 @@ function buildAnnualTab() {
         html += `<td class="num" style="background:#e8f5e9;color:#2e7d32;font-weight:600">${d.val > 0 ? fmt(d.val) : '—'}</td>`;
       }
     });
-    grandActual += r.totalActual;
-    grandSim += r.totalSim;
+    grandActual += r.totalActual; grandSim += r.totalSim;
     html += `<td class="num" style="font-weight:700;color:#1565c0">${fmt(r.totalActual)}</td>`;
     html += `<td class="num" style="font-weight:700;color:#2e7d32">${fmt(r.totalSim)}</td>`;
-    html += `<td class="num" style="font-weight:700;background:#fff9e6">${fmt(r.total)}</td>`;
-    html += '</tr>';
+    html += `<td class="num" style="font-weight:700;background:#fff9e6">${fmt(r.total)}</td></tr>`;
   });
 
-  // Total row
   html += '<tr style="background:#f0f0f0;font-weight:700"><td>합계</td>';
   ACTUAL_MONTHS.forEach(m => html += `<td class="num" style="background:#bbdefb;color:#0d47a1;font-weight:700">${fmt(catTotals.actual[m])}</td>`);
   FUTURE_MONTHS.forEach(m => html += `<td class="num" style="background:#c8e6c9;color:#1b5e20;font-weight:700">${fmt(catTotals.sim[m])}</td>`);
@@ -811,95 +1131,59 @@ function buildAnnualTab() {
   document.getElementById('annual-table').innerHTML = html;
 
   // Summary cards
-  let sumHtml = `<div class="stat-grid">`;
+  let sumHtml = '<div class="stat-grid">';
   rows.forEach(r => {
     sumHtml += `<div class="stat-box">
       <div style="font-size:12px;font-weight:700;color:#0f3460;margin-bottom:6px">${r.cat}</div>
       <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="color:#1565c0;font-size:11px">Q1 실적</span>
-        <span style="color:#1565c0;font-weight:700">${fmt(r.totalActual)}</span>
-      </div>
+        <span style="color:#1565c0;font-size:11px">Q1 실적</span><span style="color:#1565c0;font-weight:700">${fmt(r.totalActual)}</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="color:#2e7d32;font-size:11px">Q2~Q4 목표</span>
-        <span style="color:#2e7d32;font-weight:700">${fmt(r.totalSim)}</span>
-      </div>
+        <span style="color:#2e7d32;font-size:11px">Q2~Q4 목표</span><span style="color:#2e7d32;font-weight:700">${fmt(r.totalSim)}</span></div>
       <div style="border-top:1px solid #ddd;padding-top:4px;display:flex;justify-content:space-between">
-        <span style="font-size:11px;color:#888">연간 합계</span>
-        <span style="font-weight:700;color:#0f3460;font-size:15px">${fmt(r.total)}</span>
-      </div>
-      ${r.totalSim > 0 ? `<div style="margin-top:4px;font-size:10px;color:#888">Q1 비중: ${(r.totalActual/r.total*100).toFixed(0)}% | Q2~Q4: ${(r.totalSim/r.total*100).toFixed(0)}%</div>` : ''}
+        <span style="font-size:11px;color:#888">연간 합계</span><span style="font-weight:700;color:#0f3460;font-size:15px">${fmt(r.total)}</span></div>
     </div>`;
   });
   sumHtml += `<div class="stat-box" style="border:2px solid #f39c12">
     <div style="font-size:12px;font-weight:700;color:#0f3460;margin-bottom:6px">전체 합계</div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-      <span style="color:#1565c0;font-size:11px">Q1 실적</span>
-      <span style="color:#1565c0;font-weight:700">${fmt(grandActual)}</span>
-    </div>
+      <span style="color:#1565c0;font-size:11px">Q1 실적</span><span style="color:#1565c0;font-weight:700">${fmt(grandActual)}</span></div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-      <span style="color:#2e7d32;font-size:11px">Q2~Q4 목표</span>
-      <span style="color:#2e7d32;font-weight:700">${fmt(grandSim)}</span>
-    </div>
+      <span style="color:#2e7d32;font-size:11px">Q2~Q4 목표</span><span style="color:#2e7d32;font-weight:700">${fmt(grandSim)}</span></div>
     <div style="border-top:1px solid #ddd;padding-top:4px;display:flex;justify-content:space-between">
-      <span style="font-size:11px;color:#888">연간 합계</span>
-      <span style="font-weight:700;color:#0f3460;font-size:18px">${fmt(grandActual + grandSim)}</span>
-    </div>
-  </div>`;
-  sumHtml += '</div>';
+      <span style="font-size:11px;color:#888">연간 합계</span><span style="font-weight:700;color:#0f3460;font-size:18px">${fmt(grandActual + grandSim)}</span></div>
+  </div></div>`;
   document.getElementById('annual-summary').innerHTML = sumHtml;
   buildYearComparison();
 }
 
-// ─── YEAR COMPARISON TABLE ─────────────────────────────────────────────────
 function buildYearComparison() {
-  const ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const ML = {Jan:'1월',Feb:'2월',Mar:'3월',Apr:'4월',May:'5월',Jun:'6월',Jul:'7월',Aug:'8월',Sep:'9월',Oct:'10월',Nov:'11월',Dec:'12월'};
   const YRS = [
     {key:'2024', label:'2024 실적', color:'#7b1fa2', bg:'#f3e5f5', hbg:'#ce93d8'},
     {key:'2025', label:'2025 실적', color:'#1565c0', bg:'#e3f2fd', hbg:'#90caf9'},
     {key:'2026', label:'2026 실적+목표', color:'#2e7d32', bg:'#e8f5e9', hbg:'#a5d6a7'},
   ];
-
-  // 2026 data: actual Jan-Mar + sim Apr-Dec
   const data26 = {};
   CATEGORIES.forEach(cat => {
     data26[cat] = {};
     const a = ACTUAL_2026[cat] || {};
     ALL_MONTHS.forEach(m => {
-      if (['Jan','Feb','Mar'].includes(m)) {
-        data26[cat][m] = a[m] || 0;
-      } else {
-        const el = document.getElementById('mix-' + cat + '-' + m);
-        data26[cat][m] = el ? (parseInt(el.value) || 0) : 0;
-      }
+      if (['Jan','Feb','Mar'].includes(m)) data26[cat][m] = a[m] || 0;
+      else { const el = document.getElementById('mix-' + cat + '-' + m); data26[cat][m] = el ? (parseInt(el.value) || 0) : 0; }
     });
   });
-
-  function getDataForYear(yr) {
-    return yr === '2024' ? ACTUAL_2024 : yr === '2025' ? ACTUAL_2025 : data26;
-  }
-
-  // Grand totals
+  function getD(yr) { return yr === '2024' ? ACTUAL_2024 : yr === '2025' ? ACTUAL_2025 : data26; }
   const grand = {};
-  YRS.forEach(yr => {
-    const d = getDataForYear(yr.key);
-    grand[yr.key] = CATEGORIES.reduce((s,cat) =>
-      s + ALL_MONTHS.reduce((s2,m) => s2 + ((d[cat] || {})[m] || 0), 0), 0);
-  });
+  YRS.forEach(yr => { const d = getD(yr.key); grand[yr.key] = CATEGORIES.reduce((s,cat) => s + ALL_MONTHS.reduce((s2,m) => s2 + ((d[cat]||{})[m]||0), 0), 0); });
 
-  // Summary cards
   let sumHtml = '<div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:16px">';
   CATEGORIES.forEach(cat => {
     sumHtml += '<div class="stat-box"><div style="font-size:12px;font-weight:700;color:#0f3460;margin-bottom:6px">' + cat + '</div>';
     let prev = 0;
     YRS.forEach(yr => {
-      const d = getDataForYear(yr.key);
-      const v = ALL_MONTHS.reduce((s,m) => s + ((d[cat] || {})[m] || 0), 0);
+      const d = getD(yr.key); const v = ALL_MONTHS.reduce((s,m) => s + ((d[cat]||{})[m]||0), 0);
       const yoy = prev > 0 ? ' <span style="font-size:10px;color:#888">(YoY ' + ((v/prev-1)*100).toFixed(0) + '%)</span>' : '';
-      sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-              + '<span style="color:' + yr.color + ';font-size:11px">' + yr.label + '</span>'
-              + '<span style="color:' + yr.color + ';font-weight:700">' + (v > 0 ? v.toLocaleString() : '—') + (yr.key !== '2024' ? yoy : '') + '</span>'
-              + '</div>';
+      sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:'+yr.color+';font-size:11px">'+yr.label+'</span><span style="color:'+yr.color+';font-weight:700">'+(v>0?v.toLocaleString():'—')+(yr.key!=='2024'?yoy:'')+'</span></div>';
       prev = v;
     });
     sumHtml += '</div>';
@@ -907,97 +1191,74 @@ function buildYearComparison() {
   sumHtml += '<div class="stat-box" style="border:2px solid #f39c12"><div style="font-size:12px;font-weight:700;color:#0f3460;margin-bottom:6px">전체 합계</div>';
   let prev2 = 0;
   YRS.forEach(yr => {
-    const v = grand[yr.key];
-    const yoy = prev2 > 0 ? ' <span style="font-size:10px;color:#888">(YoY ' + ((v/prev2-1)*100).toFixed(0) + '%)</span>' : '';
-    sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-            + '<span style="color:' + yr.color + ';font-size:11px">' + yr.label + '</span>'
-            + '<span style="color:' + yr.color + ';font-weight:700;font-size:13px">' + v.toLocaleString() + (yr.key !== '2024' ? yoy : '') + '</span>'
-            + '</div>';
+    const v = grand[yr.key]; const yoy = prev2>0?' <span style="font-size:10px;color:#888">(YoY '+((v/prev2-1)*100).toFixed(0)+'%)</span>':'';
+    sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:'+yr.color+';font-size:11px">'+yr.label+'</span><span style="color:'+yr.color+';font-weight:700;font-size:13px">'+v.toLocaleString()+(yr.key!=='2024'?yoy:'')+'</span></div>';
     prev2 = v;
   });
   sumHtml += '</div></div>';
 
-  // Monthly detail table
   let tbl = '<div class="tbl-wrap"><table><thead><tr><th>Category</th><th>Year</th>';
-  ALL_MONTHS.forEach(m => tbl += '<th>' + ML[m] + '</th>');
-  tbl += '<th>연간 합계</th></tr></thead><tbody>';
-
+  ALL_MONTHS.forEach(m => tbl += '<th>'+ML[m]+'</th>');
+  tbl += '<th>합계</th></tr></thead><tbody>';
   CATEGORIES.forEach(cat => {
-    YRS.forEach((yr, yi) => {
-      const d = (getDataForYear(yr.key)[cat] || {});
-      const rowTotal = ALL_MONTHS.reduce((s,m) => s + (d[m] || 0), 0);
-      tbl += '<tr' + (yi === YRS.length-1 ? ' style="border-bottom:2px solid #ccc"' : '') + '>';
-      if (yi === 0) tbl += '<td rowspan="' + YRS.length + '" style="font-weight:700;background:#f8fafd;vertical-align:middle">' + cat + '</td>';
-      tbl += '<td style="color:' + yr.color + ';font-weight:600;background:' + yr.bg + ';white-space:nowrap">' + yr.label + '</td>';
-      ALL_MONTHS.forEach(m => {
-        const v = d[m] || 0;
-        tbl += '<td class="num" style="background:' + yr.bg + ';color:' + yr.color + '">' + (v > 0 ? v.toLocaleString() : '—') + '</td>';
-      });
-      tbl += '<td class="num" style="background:' + yr.hbg + ';color:' + yr.color + ';font-weight:700">' + (rowTotal > 0 ? rowTotal.toLocaleString() : '—') + '</td>';
-      tbl += '</tr>';
+    YRS.forEach((yr,yi) => {
+      const d = (getD(yr.key)[cat]||{});
+      const rowTotal = ALL_MONTHS.reduce((s,m) => s+(d[m]||0), 0);
+      tbl += '<tr'+(yi===YRS.length-1?' style="border-bottom:2px solid #ccc"':'')+'>';
+      if (yi===0) tbl += '<td rowspan="'+YRS.length+'" style="font-weight:700;background:#f8fafd;vertical-align:middle">'+cat+'</td>';
+      tbl += '<td style="color:'+yr.color+';font-weight:600;background:'+yr.bg+'">'+yr.label+'</td>';
+      ALL_MONTHS.forEach(m => { const v=d[m]||0; tbl += '<td class="num" style="background:'+yr.bg+';color:'+yr.color+'">'+(v>0?v.toLocaleString():'—')+'</td>'; });
+      tbl += '<td class="num" style="background:'+yr.hbg+';color:'+yr.color+';font-weight:700">'+(rowTotal>0?rowTotal.toLocaleString():'—')+'</td></tr>';
     });
   });
-
-  // Grand total rows
-  YRS.forEach((yr, yi) => {
-    const d = getDataForYear(yr.key);
+  YRS.forEach((yr,yi) => {
+    const d = getD(yr.key);
     tbl += '<tr style="font-weight:700">';
-    if (yi === 0) tbl += '<td rowspan="' + YRS.length + '" style="font-weight:700;background:#e8e8e8;vertical-align:middle">합계</td>';
-    tbl += '<td style="color:' + yr.color + ';font-weight:700;background:' + yr.hbg + ';white-space:nowrap">' + yr.label + '</td>';
-    ALL_MONTHS.forEach(m => {
-      const v = CATEGORIES.reduce((s,cat) => s + ((d[cat] || {})[m] || 0), 0);
-      tbl += '<td class="num" style="background:' + yr.hbg + ';color:' + yr.color + ';font-weight:700">' + (v > 0 ? v.toLocaleString() : '—') + '</td>';
-    });
-    tbl += '<td class="num" style="background:' + (yr.key === '2026' ? '#ffe082' : yr.hbg) + ';color:' + yr.color + ';font-weight:700;font-size:13px">' + grand[yr.key].toLocaleString() + '</td>';
-    tbl += '</tr>';
+    if (yi===0) tbl += '<td rowspan="'+YRS.length+'" style="font-weight:700;background:#e8e8e8;vertical-align:middle">합계</td>';
+    tbl += '<td style="color:'+yr.color+';font-weight:700;background:'+yr.hbg+'">'+yr.label+'</td>';
+    ALL_MONTHS.forEach(m => { const v=CATEGORIES.reduce((s,cat)=>s+((d[cat]||{})[m]||0),0); tbl += '<td class="num" style="background:'+yr.hbg+';color:'+yr.color+';font-weight:700">'+(v>0?v.toLocaleString():'—')+'</td>'; });
+    tbl += '<td class="num" style="background:'+(yr.key==='2026'?'#ffe082':yr.hbg)+';color:'+yr.color+';font-weight:700;font-size:13px">'+grand[yr.key].toLocaleString()+'</td></tr>';
   });
   tbl += '</tbody></table></div>';
-
   document.getElementById('year-compare-table').innerHTML = sumHtml + tbl;
 }
 
 function exportAnnualCSV() {
-  let csv = 'Category,Type,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec,Q1_실적,Q2~Q4_목표,연간합계\n';
+  let csv = 'Category,Type,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec,Q1,Q2_Q4,Annual\n';
   CATEGORIES.forEach(cat => {
     const actual = ACTUAL_2026[cat] || {};
     const simInputs = {};
-    FUTURE_MONTHS.forEach(m => {
-      const el = document.getElementById('mix-' + cat + '-' + m);
-      simInputs[m] = el ? (parseInt(el.value) || 0) : 0;
-    });
-    const q1 = ACTUAL_MONTHS.reduce((s,m) => s + (actual[m]||0), 0);
-    const q2q4 = FUTURE_MONTHS.reduce((s,m) => s + (simInputs[m]||0), 0);
+    FUTURE_MONTHS.forEach(m => { const el = document.getElementById('mix-'+cat+'-'+m); simInputs[m] = el?(parseInt(el.value)||0):0; });
+    const q1 = ACTUAL_MONTHS.reduce((s,m)=>s+(actual[m]||0),0);
+    const q2q4 = FUTURE_MONTHS.reduce((s,m)=>s+(simInputs[m]||0),0);
     let row = `"${cat}","실적+목표"`;
-    ACTUAL_MONTHS.forEach(m => row += `,${actual[m]||0}`);
-    FUTURE_MONTHS.forEach(m => row += `,${simInputs[m]||0}`);
-    row += `,${q1},${q2q4},${q1+q2q4}`;
+    ACTUAL_MONTHS.forEach(m => row += ','+(actual[m]||0));
+    FUTURE_MONTHS.forEach(m => row += ','+(simInputs[m]||0));
+    row += ','+q1+','+q2q4+','+(q1+q2q4);
     csv += row + '\n';
   });
   downloadCSV(csv, 'Annual_View_2026.csv');
 }
 
-// ─── TAB 4: TREND ────────────────────────────────────────────────────────────
+// ─── TAB 6: TREND (same as v2) ────────────────────────────────────────────
 function buildTrendTab() {
-  // YoY table
-  let html = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Category</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th></tr></thead>
-    <tbody>`;
-  const MONTHS_ALL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let html = '<div class="tbl-wrap"><table><thead><tr><th>Category</th>';
+  ALL_MONTHS.forEach(m => html += '<th>'+m+'</th>');
+  html += '</tr></thead><tbody>';
   CATEGORIES.forEach(cat => {
-    html += `<tr><td>${cat}</td>`;
-    MONTHS_ALL.forEach(m => {
+    html += '<tr><td>'+cat+'</td>';
+    ALL_MONTHS.forEach(m => {
       const g = YOY[cat]?.[m];
-      if (!g) { html += `<td class="pct">—</td>`; return; }
+      if (!g) { html += '<td class="pct">—</td>'; return; }
       const pct = ((g-1)*100).toFixed(0);
       const cls = g>=1.1?'up':g<=0.9?'dn':'flat';
-      html += `<td class="pct"><span class="trend ${cls}">${pct>=0?'+':''}${pct}%</span></td>`;
+      html += '<td class="pct"><span class="trend '+cls+'">'+(pct>=0?'+':'')+pct+'%</span></td>';
     });
-    html += `</tr>`;
+    html += '</tr>';
   });
-  html += `</tbody></table></div>`;
+  html += '</tbody></table></div>';
   document.getElementById('trend-table').innerHTML = html;
 
-  // Model mix chips
   const chips = document.getElementById('trend-cat-chips');
   chips.innerHTML = CATEGORIES.map((cat,i) =>
     `<span class="chip ${i===0?'active':''}" onclick="showModelMix('${cat}',this)">${cat}</span>`
@@ -1013,33 +1274,61 @@ function showModelMix(cat, el) {
   const top50 = models.slice(0, 50);
   const maxQty = top50[0]?.qty || 1;
   let html = `<div style="font-size:12px;color:#888;margin-bottom:6px;">⭐ 행을 클릭하면 점검 필요 표시</div>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th style="width:28px"></th><th>Rank</th><th>Model</th><th>BTU</th><th>Compressor</th><th>Type</th><th>2025~26 수량</th><th>믹스 비율</th><th>비율 시각화</th></tr></thead><tbody>`;
+  <div class="tbl-wrap"><table><thead><tr><th style="width:28px"></th><th>Rank</th><th>Model</th><th>BTU</th><th>Comp</th><th>Type</th><th>수량</th><th>믹스</th><th>시각화</th></tr></thead><tbody>`;
   top50.forEach((m, i) => {
     const barW = Math.round(m.qty / maxQty * 120);
     const ikey = cat + '|' + m.model;
     const isInspect = !!inspectModels[ikey];
     html += `<tr class="${isInspect?'inspect-row':''}" data-inspect-key="${ikey}" onclick="toggleInspect('${cat.replace(/'/g,"\\'")}','${m.model.replace(/'/g,"\\'")}',event)" style="cursor:pointer">
-      <td><button class="inspect-btn" title="점검 필요">${isInspect?'⭐':'☆'}</button></td>
-      <td class="num">${i+1}</td>
-      <td>${m.model}</td>
-      <td>${m.btu}</td>
-      <td>${m.comp}</td>
-      <td>${m.type}</td>
-      <td class="num">${fmt(m.qty)}</td>
-      <td class="pct">${m.pct}%</td>
-      <td><span class="bar" style="width:${barW}px"></span></td>
-    </tr>`;
+      <td><button class="inspect-btn">${isInspect?'⭐':'☆'}</button></td>
+      <td class="num">${i+1}</td><td>${m.model}</td><td>${m.btu}</td><td>${m.comp}</td><td>${m.type}</td>
+      <td class="num">${fmt(m.qty)}</td><td class="pct">${m.pct}%</td>
+      <td><span class="bar" style="width:${barW}px"></span></td></tr>`;
   });
-  html += `</tbody></table></div>`;
+  html += '</tbody></table></div>';
   document.getElementById('model-mix-detail').innerHTML = html;
 }
 
-// ─── Utilities ───────────────────────────────────────────────────────────────
+// ─── CSV + Utilities ──────────────────────────────────────────────────────
+function exportMixCSV() {
+  if (!mixResults) { alert('먼저 분배 실행을 해주세요!'); return; }
+  let csv = 'Category,Model,BTU,Compressor,Type';
+  FUTURE_MONTHS.forEach(m => csv += ','+m);
+  csv += ',Total\n';
+  CATEGORIES.forEach(cat => {
+    const data = mixResults[cat] || {};
+    const activeMonths = FUTURE_MONTHS.filter(m => data[m]);
+    if (activeMonths.length === 0) return;
+    const allModels = new Set();
+    activeMonths.forEach(m => (data[m]?.models||[]).forEach(r => allModels.add(r.model)));
+    allModels.forEach(model => {
+      const info = (MODEL_MIX[cat]||[]).find(x=>x.model===model)||{};
+      let row = `"${cat}","${model}","${info.btu||''}","${info.comp||''}","${info.type||''}"`;
+      let total = 0;
+      FUTURE_MONTHS.forEach(m => { const r=(data[m]?.models||[]).find(x=>x.model===model); const q=r?.qty||0; row+=','+q; total+=q; });
+      row += ','+total;
+      csv += row + '\n';
+    });
+  });
+  downloadCSV(csv, 'ModelMix_Distribution.csv');
+}
+
+function exportSimCSV() {
+  let csv = 'Channel,Group,Month,Sell_Thru_Target\n';
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch];
+    FUTURE_MONTHS.forEach(m => {
+      const el = document.getElementById(`sim-${ch}-${m}`);
+      csv += `${ch},${s?.group||''},${m},${el?.value||0}\n`;
+    });
+  });
+  downloadCSV(csv, 'Channel_SellThru_Sim.csv');
+}
+
 function fmt(n) { return (n||0).toLocaleString(); }
 
 function downloadCSV(csv, filename) {
-  const bom = '﻿';
+  const bom = '\uFEFF';
   const blob = new Blob([bom+csv], {type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1047,7 +1336,8 @@ function downloadCSV(csv, filename) {
   a.click();
 }
 
-// ─── Init ────────────────────────────────────────────────────────────────────
+// ─── Init ─────────────────────────────────────────────────────────────────
+buildSeasonChart();
 buildAnnualTargetInputs();
 buildMixInputs();
 </script>
