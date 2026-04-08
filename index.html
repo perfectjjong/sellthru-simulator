@@ -232,33 +232,21 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
         <div style="font-size:10px;color:#888;margin-top:4px">모델별 분배 시 카테고리 가중치에 적용됩니다.</div>
       </div>
 
-      <!-- 6. 프로모션 -->
-      <div class="param-section" style="grid-column:span 1">
-        <div class="param-section-title">6️⃣ 프로모션 (자사 vs 경쟁사)</div>
-        <div class="param-row">
-          <label>자사 등급</label>
-          <select id="p-promo-own" onchange="updatePromoMatrix();updateParamSummary()">
-            <option value="A">Promo A (기본)</option>
-            <option value="B">Promo B (중간)</option>
-            <option value="C">Promo C (공격)</option>
-            <option value="T">Tactical (최대 공격)</option>
+      <!-- 6. 프로모션 (월별) -->
+      <div class="param-section" style="grid-column:span 2">
+        <div class="param-section-title">6️⃣ 프로모션 (자사 vs 경쟁사 — 월별 설정)</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <button type="button" onclick="applyPromoAll()" style="font-size:10px;padding:3px 8px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#e3f2fd">📋 아래 설정을 전체 월 일괄 적용</button>
+          <select id="p-promo-bulk-own" style="font-size:11px;padding:2px">
+            <option value="A">자사 A</option><option value="B">자사 B</option><option value="C">자사 C</option><option value="T">자사 Tac</option>
+          </select>
+          <select id="p-promo-bulk-comp" style="font-size:11px;padding:2px">
+            <option value="A">경쟁 A</option><option value="B" selected>경쟁 B</option><option value="C">경쟁 C</option><option value="T">경쟁 Tac</option>
           </select>
         </div>
-        <div class="param-row">
-          <label>경쟁사 등급</label>
-          <select id="p-promo-comp" onchange="updatePromoMatrix();updateParamSummary()">
-            <option value="A">Promo A (기본)</option>
-            <option value="B" selected>Promo B (중간)</option>
-            <option value="C">Promo C (공격)</option>
-            <option value="T">Tactical (최대 공격)</option>
-          </select>
-        </div>
-        <div id="p-promo-result"></div>
-        <table class="promo-matrix" id="p-promo-matrix">
-          <thead><tr><th>자사↓ 경쟁사→</th><th>A</th><th>B</th><th>C</th><th>Tactical</th></tr></thead>
-          <tbody id="p-promo-matrix-body"></tbody>
-        </table>
-        <div style="font-size:10px;color:#888;margin-top:4px">수요 보정에 프로모션 효과가 반영됩니다.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="p-promo-monthly-grid"></div>
+        <div id="p-promo-result" style="margin-top:6px"></div>
+        <div style="font-size:10px;color:#888;margin-top:4px">월별로 자사/경쟁사 프로모션 전략을 다르게 설정할 수 있습니다.</div>
       </div>
 
       <!-- 7. 외부환경 (방식B: 기온, 유가) -->
@@ -1684,7 +1672,7 @@ function initParamPanel() {
   });
   document.getElementById('p-ch-ir-detail').innerHTML = irHtml;
 
-  updatePromoMatrix();
+  initPromoMonthly();
   updateParamSummary();
 }
 
@@ -1697,34 +1685,56 @@ function applyDemandAll(val) {
   updateParamSummary();
 }
 
-function updatePromoMatrix() {
-  const own = document.getElementById('p-promo-own').value;
-  const comp = document.getElementById('p-promo-comp').value;
-  const effect = PROMO_MATRIX[own][comp];
-  const effectPct = ((effect - 1) * 100).toFixed(0);
-
-  let cls = 'neutral', label = '동등';
-  if (effect > 1.02) { cls = 'boost'; label = '우세 (수요 +' + effectPct + '%)'; }
-  else if (effect < 0.98) { cls = 'dampen'; label = '열세 (수요 ' + effectPct + '%)'; }
-  document.getElementById('p-promo-result').innerHTML =
-    `<div class="param-impact ${cls}" style="margin:6px 0">📊 ${PROMO_LABELS[own]} vs ${PROMO_LABELS[comp]}: <strong>${label}</strong></div>`;
-
-  // Build matrix
-  const grades = ['A','B','C','T'];
-  let mHtml = '';
-  grades.forEach(o => {
-    mHtml += `<tr><th>${PROMO_LABELS[o]}</th>`;
-    grades.forEach(c => {
-      const v = PROMO_MATRIX[o][c];
-      const pct = ((v-1)*100).toFixed(0);
-      const selected = (o === own && c === comp);
-      let tdCls = v > 1.02 ? 'promo-win' : v < 0.98 ? 'promo-lose' : 'promo-draw';
-      let style = selected ? 'border:2px solid #0f3460;font-size:12px;' : '';
-      mHtml += `<td class="${tdCls}" style="${style}">${pct >= 0 ? '+' : ''}${pct}%</td>`;
-    });
-    mHtml += '</tr>';
+function initPromoMonthly() {
+  const grid = document.getElementById('p-promo-monthly-grid');
+  const opts = '<option value="A">A (기본)</option><option value="B">B (중간)</option><option value="C">C (공격)</option><option value="T">Tac (최대)</option>';
+  let html = '';
+  FUTURE_MONTHS.forEach(m => {
+    html += `<div style="background:#f8faff;border:1px solid #e0e6f0;border-radius:6px;padding:6px 8px">
+      <div style="font-weight:600;font-size:11px;color:#0f3460;margin-bottom:4px">${m}</div>
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+        <span style="font-size:10px;min-width:28px">자사</span>
+        <select id="p-promo-own-${m}" onchange="updatePromoSummary();updateParamSummary()" style="font-size:10px;flex:1;padding:1px 2px">${opts}</select>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:10px;min-width:28px">경쟁</span>
+        <select id="p-promo-comp-${m}" onchange="updatePromoSummary();updateParamSummary()" style="font-size:10px;flex:1;padding:1px 2px">${opts.replace('value="B">', 'value="B" selected>')}</select>
+      </div>
+      <div id="p-promo-badge-${m}" style="font-size:10px;margin-top:3px;text-align:center"></div>
+    </div>`;
   });
-  document.getElementById('p-promo-matrix-body').innerHTML = mHtml;
+  grid.innerHTML = html;
+  updatePromoSummary();
+}
+
+function applyPromoAll() {
+  const bulkOwn = document.getElementById('p-promo-bulk-own').value;
+  const bulkComp = document.getElementById('p-promo-bulk-comp').value;
+  FUTURE_MONTHS.forEach(m => {
+    document.getElementById('p-promo-own-' + m).value = bulkOwn;
+    document.getElementById('p-promo-comp-' + m).value = bulkComp;
+  });
+  updatePromoSummary();
+  updateParamSummary();
+}
+
+function updatePromoSummary() {
+  let summaryParts = [];
+  FUTURE_MONTHS.forEach(m => {
+    const own = document.getElementById('p-promo-own-' + m).value;
+    const comp = document.getElementById('p-promo-comp-' + m).value;
+    const effect = PROMO_MATRIX[own][comp];
+    const pct = ((effect - 1) * 100).toFixed(0);
+    const badge = document.getElementById('p-promo-badge-' + m);
+    let cls, label;
+    if (effect > 1.02) { cls = 'promo-win'; label = '+' + pct + '%'; }
+    else if (effect < 0.98) { cls = 'promo-lose'; label = pct + '%'; }
+    else { cls = 'promo-draw'; label = '±0%'; }
+    if (badge) badge.innerHTML = `<span class="${cls}" style="padding:1px 6px;border-radius:3px;font-weight:600">${own}v${comp} ${label}</span>`;
+    summaryParts.push(`${m}:${pct >= 0 ? '+' : ''}${pct}%`);
+  });
+  document.getElementById('p-promo-result').innerHTML =
+    `<div style="font-size:10px;color:#555">📊 월별 프로모션 효과: ${summaryParts.join(', ')}</div>`;
 }
 
 function getParamValues() {
@@ -1760,10 +1770,13 @@ function getParamValues() {
     mixWeights[cat] = (parseInt(el?.value) || 100) / 100;
   });
 
-  // 6. Promo effect
-  const promoOwn = document.getElementById('p-promo-own').value;
-  const promoComp = document.getElementById('p-promo-comp').value;
-  const promoEffect = PROMO_MATRIX[promoOwn][promoComp];
+  // 6. Promo effect (per month)
+  const promoByMonth = {};
+  FUTURE_MONTHS.forEach(m => {
+    const own = document.getElementById('p-promo-own-' + m).value;
+    const comp = document.getElementById('p-promo-comp-' + m).value;
+    promoByMonth[m] = { own, comp, effect: PROMO_MATRIX[own][comp] };
+  });
 
   // 7. External environment
   const tempByMonth = {};
@@ -1792,7 +1805,7 @@ function getParamValues() {
     demand: { adj: demandAdj },
     inventory: { wosIR, wosOR, wosIRShort, wosORShort },
     modelMix: { weights: mixWeights },
-    promo: { own: promoOwn, comp: promoComp, effect: promoEffect },
+    promo: { byMonth: promoByMonth },
     env: { temps: tempByMonth, tempImpact, oilLevel, oilEffect },
     channel: { orPct, irPct, weights: chWeights }
   };
@@ -1805,8 +1818,9 @@ function getDemandMultiplier(cat, month) {
   let mult = 1.0;
   // Demand adjustment
   mult += (p.demand.adj[cat] || 0);
-  // Promo effect
-  mult *= p.promo.effect;
+  // Promo effect (per month)
+  const promoMonth = p.promo.byMonth[month];
+  mult *= promoMonth ? promoMonth.effect : 1.0;
   // Temperature effect
   mult *= (p.env.tempImpact[month] || 1.0);
   // Oil price effect
@@ -1872,10 +1886,14 @@ function resetParams() {
     const el = document.getElementById('p-mix-' + cat.replace(/\s+/g, '_'));
     if (el) { el.value = 100; el.nextElementSibling.textContent = '100%'; }
   });
-  // Reset promo
-  document.getElementById('p-promo-own').value = 'A';
-  document.getElementById('p-promo-comp').value = 'B';
-  updatePromoMatrix();
+  // Reset promo (monthly)
+  FUTURE_MONTHS.forEach(m => {
+    const ownEl = document.getElementById('p-promo-own-' + m);
+    const compEl = document.getElementById('p-promo-comp-' + m);
+    if (ownEl) ownEl.value = 'A';
+    if (compEl) compEl.value = 'B';
+  });
+  updatePromoSummary();
   // Reset temps
   FUTURE_MONTHS.forEach(m => {
     const el = document.getElementById('p-temp-' + m);
@@ -1905,10 +1923,15 @@ function updateParamSummary() {
     return el && parseInt(el.value) !== 0;
   });
   if (anyDemand) parts.push('수요조정');
-  // Promo
-  const po = document.getElementById('p-promo-own').value;
-  const pc = document.getElementById('p-promo-comp').value;
-  if (po !== 'A' || pc !== 'A') parts.push('프로모 ' + po + 'vs' + pc);
+  // Promo (monthly)
+  const promoSet = new Set();
+  FUTURE_MONTHS.forEach(m => {
+    const po = document.getElementById('p-promo-own-' + m)?.value || 'A';
+    const pc = document.getElementById('p-promo-comp-' + m)?.value || 'A';
+    if (po !== 'A' || pc !== 'A') promoSet.add(po + 'v' + pc);
+  });
+  if (promoSet.size === 1) parts.push('프로모 ' + [...promoSet][0]);
+  else if (promoSet.size > 1) parts.push('프로모 월별설정');
   // Oil
   const oil = document.getElementById('p-env-oil').value;
   if (oil !== 'mid') parts.push('유가:' + {low:'저',mid:'중',high:'고',vhigh:'초고'}[oil]);
@@ -1948,7 +1971,7 @@ runSupplySimulation = function() {
   html += `<div class="info-box" style="margin-bottom:12px">
     <strong>⚙️ 적용된 파라미터:</strong>
     공급전략=${appliedParams.supply.mode}
-    | 프로모 효과=${((appliedParams.promo.effect-1)*100).toFixed(0)}%
+    | 프로모=월별설정
     | 유가=${appliedParams.env.oilLevel}(${((appliedParams.env.oilEffect-1)*100).toFixed(0)}%)
     | IR WOS목표=${appliedParams.inventory.wosIR}W | OR WOS목표=${appliedParams.inventory.wosOR}W
   </div>`;
@@ -1956,7 +1979,7 @@ runSupplySimulation = function() {
   // TABLE 1: Sell-In
   html += `<div class="card" style="margin-top:12px"><div class="card-title">📦 월별 필요 발주량 (Sell-In) — 옵션 파라미터 반영</div>
     <div class="info-box">공식: <code>필요입고 = max(0, 목표재고 - (전월재고 - Sell-Out))</code> × 공급전략 배율<br>
-    수요 보정: 프로모션(${((appliedParams.promo.effect-1)*100).toFixed(0)}%) + 유가(${((appliedParams.env.oilEffect-1)*100).toFixed(0)}%) + 기온 보정</div>
+    수요 보정: 프로모션(월별) + 유가(${((appliedParams.env.oilEffect-1)*100).toFixed(0)}%) + 기온 보정</div>
     <div class="tbl-wrap"><table>
     <thead><tr><th>Channel</th><th>현재고</th><th>목표WOS</th>`;
   FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>발주(Sell-In)</small></th>`);
