@@ -332,6 +332,11 @@ const ACTUAL_2025 = _DATA.actual_2025;
 const ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const ACTUAL_MONTHS = ['Jan','Feb','Mar'];
 
+// Cap extreme YoY growth to prevent unrealistic projections (e.g., Window AC 55x)
+const YOY_CAP_MAX = 3.0;  // Max 300% growth
+const YOY_CAP_MIN = 0.1;  // Min 10% (90% decline)
+function capGrowth(g) { return Math.min(YOY_CAP_MAX, Math.max(YOY_CAP_MIN, g)); }
+
 let mixResults = null;
 
 // ─── Inspect (점검 필요) highlight ─────────────────────────────────────────
@@ -566,7 +571,7 @@ function applyAutoTrend() {
     const mar = actual.Mar || 0;
     const yoy = YOY[cat] || {};
     FUTURE_MONTHS.forEach(m => {
-      const growth = yoy[m] || 1.0;
+      const growth = capGrowth(yoy[m] || 1.0);
       const base = mar || 100;
       const est = Math.round(base * growth);
       const el = document.getElementById(`mix-${cat}-${m}`);
@@ -990,7 +995,26 @@ function runScenarioComparison() {
   const optDelta = (parseInt(document.getElementById('sc-opt-delta')?.value) || 10) / 100;
   const conDelta = (parseInt(document.getElementById('sc-con-delta')?.value) || 10) / 100;
 
+  // Check which categories have capped YoY
+  let cappedCats = [];
+  CATEGORIES.forEach(cat => {
+    const yoy = YOY[cat] || {};
+    const capped = FUTURE_MONTHS.filter(m => {
+      const g = yoy[m] || 1.0;
+      return g > YOY_CAP_MAX || g < YOY_CAP_MIN;
+    });
+    if (capped.length > 0) cappedCats.push({cat, months: capped, yoy});
+  });
+
   let html = '';
+  if (cappedCats.length > 0) {
+    html += `<div class="warn-box">⚠️ <strong>YoY 성장률 캡 적용:</strong> 일부 카테고리의 극단적 YoY (>${YOY_CAP_MAX*100}% 또는 <${YOY_CAP_MIN*100}%)가 상한/하한으로 조정되었습니다.<br>`;
+    cappedCats.forEach(({cat, months, yoy}) => {
+      html += `&nbsp;&nbsp;• <strong>${cat}</strong>: ${months.map(m => m + '=' + (yoy[m]||1).toFixed(1) + 'x→' + capGrowth(yoy[m]||1).toFixed(1) + 'x').join(', ')}<br>`;
+    });
+    html += `</div>`;
+  }
+
   CATEGORIES.forEach(cat => {
     const actual = ACTUAL_2026[cat] || {};
     const d25 = ACTUAL_2025[cat] || {};
@@ -1017,7 +1041,7 @@ function runScenarioComparison() {
     // Future months
     FUTURE_MONTHS.forEach(m => {
       const base25 = d25[m] || 0;
-      const growth = yoy[m] || 1.0;
+      const growth = capGrowth(yoy[m] || 1.0);
       const baseVal = Math.round(base25 * growth);
       const optVal = Math.round(baseVal * (1 + optDelta));
       const conVal = Math.round(baseVal * (1 - conDelta));
@@ -1059,7 +1083,7 @@ function runScenarioComparison() {
     });
     FUTURE_MONTHS.forEach(m => {
       const base25 = d25[m] || 0;
-      const growth = yoy[m] || 1.0;
+      const growth = capGrowth(yoy[m] || 1.0);
       const baseVal = Math.round(base25 * growth);
       co += Math.round(baseVal * (1 + optDelta));
       cb += baseVal;
@@ -1116,7 +1140,7 @@ function exportScenarioCSV() {
     });
     FUTURE_MONTHS.forEach(m => {
       const base25 = d25[m] || 0;
-      const growth = yoy[m] || 1.0;
+      const growth = capGrowth(yoy[m] || 1.0);
       const baseVal = Math.round(base25 * growth);
       csv += `"${cat}",${m},${Math.round(baseVal*(1+optDelta))},${baseVal},${Math.round(baseVal*(1-conDelta))}\n`;
     });
