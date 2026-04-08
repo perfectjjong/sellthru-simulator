@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sell Thru Simulator v2 - Model Mix</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; font-size: 13px; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 16px 24px; }
+.header h1 { font-size: 20px; font-weight: 700; }
+.header p { font-size: 12px; color: #a0b4cc; margin-top: 4px; }
+.tabs { display: flex; background: #1a1a2e; padding: 0 16px; gap: 2px; }
+.tab { padding: 10px 20px; cursor: pointer; color: #a0b4cc; font-size: 13px; border-bottom: 3px solid transparent; transition: all .2s; }
+.tab.active { color: #4fc3f7; border-bottom-color: #4fc3f7; font-weight: 600; }
+.tab:hover:not(.active) { color: #fff; }
+.tab-content { display: none; padding: 16px; }
+.tab-content.active { display: block; }
+
+/* Cards */
+.card { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 12px; }
+.card-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #1a1a2e; border-bottom: 2px solid #e0e6f0; padding-bottom: 8px; }
+.row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.col { flex: 1; min-width: 200px; }
+.col2 { flex: 2; min-width: 300px; }
+
+/* Input grid */
+.input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.input-item { display: flex; flex-direction: column; gap: 4px; }
+.input-item label { font-size: 11px; color: #666; font-weight: 600; }
+.input-item input { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-size: 13px; text-align: right; }
+.input-item input:focus { outline: none; border-color: #4fc3f7; box-shadow: 0 0 0 2px rgba(79,195,247,.2); }
+
+/* Buttons */
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all .2s; }
+.btn-primary { background: #0f3460; color: white; }
+.btn-primary:hover { background: #16213e; }
+.btn-success { background: #27ae60; color: white; }
+.btn-success:hover { background: #219a52; }
+.btn-info { background: #4fc3f7; color: #1a1a2e; }
+.btn-info:hover { background: #29b6f6; }
+.btn-warn { background: #f39c12; color: white; }
+.btn-warn:hover { background: #e67e22; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+/* Table */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: #1a1a2e; color: white; padding: 8px 10px; text-align: center; font-weight: 600; white-space: nowrap; }
+th:first-child { text-align: left; }
+td { padding: 6px 10px; border-bottom: 1px solid #edf0f5; }
+td:first-child { font-weight: 600; }
+tr:hover td { background: #f8fafd; }
+.num { text-align: right; }
+.pct { text-align: right; color: #666; }
+.highlight { background: #fff9e6 !important; }
+.bar-cell { position: relative; }
+.bar { height: 14px; background: linear-gradient(90deg, #4fc3f7, #0f3460); border-radius: 2px; min-width: 2px; display: inline-block; }
+
+/* Category chips */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip { padding: 4px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #dde1e8; background: white; color: #555; transition: all .2s; }
+.chip.active { background: #0f3460; color: white; border-color: #0f3460; }
+.chip:hover:not(.active) { border-color: #4fc3f7; color: #4fc3f7; }
+
+/* Stat boxes */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.stat-box { background: #f8fafd; border: 1px solid #e0e6f0; border-radius: 6px; padding: 10px; text-align: center; }
+.stat-box .val { font-size: 20px; font-weight: 700; color: #0f3460; }
+.stat-box .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+
+/* Trend badge */
+.trend { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+.trend.up { background: #e8f5e9; color: #27ae60; }
+.trend.dn { background: #ffebee; color: #e74c3c; }
+.trend.flat { background: #f5f5f5; color: #888; }
+
+/* Section header */
+.sec-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.sec-hdr h3 { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+.badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.badge-blue { background: #e3f2fd; color: #1565c0; }
+.badge-green { background: #e8f5e9; color: #2e7d32; }
+
+select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-size: 13px; }
+.info-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; line-height: 1.6; color: #1a3a5c; }
+.warn-box { background: #fff8e1; border-left: 4px solid #f39c12; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: #7d5a00; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 Sell Thru Simulator v2 — Model Mix 분배</h1>
+  <p>카테고리별 월 판매 목표 입력 → 과거 트렌드 기반 모델별 자동 분배 | 데이터: 2025~2026 YTD</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('mix')">🔀 모델별 믹스 분배</div>
+  <div class="tab" onclick="switchTab('sim')">📈 채널별 Sell Thru 시뮬</div>
+  <div class="tab" onclick="switchTab('trend')">📅 연도별 트렌드</div>
+</div>
+
+<!-- TAB 1: 모델별 믹스 분배 -->
+<div id="tab-mix" class="tab-content active">
+  <div class="card">
+    <div class="card-title">📥 STEP 1 — 월별 카테고리별 목표 수량 입력</div>
+    <div class="info-box">
+      <strong>사용법:</strong> 월별로 카테고리 전체 목표 셀아웃 수량을 입력하세요.<br>
+      [자동 분배] 클릭 시 2025~2026 과거 판매 비율(모델 믹스%)을 적용해 모델별 수량으로 분배합니다.
+    </div>
+    <div id="mix-input-area"></div>
+    <div class="btn-group" style="margin-top:10px">
+      <button class="btn btn-primary" onclick="applyAutoTrend()">📈 YoY 트렌드로 자동 채우기</button>
+      <button class="btn btn-success" onclick="runMixDistribution()">🔀 모델별 자동 분배</button>
+      <button class="btn btn-info" onclick="exportMixCSV()">📥 CSV 내보내기</button>
+      <button class="btn btn-warn" onclick="clearMixInputs()">🗑️ 초기화</button>
+    </div>
+  </div>
+
+  <div class="card" id="mix-result-card" style="display:none">
+    <div class="card-title">📊 STEP 2 — 모델별 분배 결과</div>
+    <div class="chips" id="mix-cat-chips"></div>
+    <div id="mix-result-table"></div>
+  </div>
+
+  <div class="card" id="mix-channel-card" style="display:none">
+    <div class="card-title">🏪 STEP 3 — 채널별 분배 결과</div>
+    <div class="info-box">채널 분배는 2025~2026 과거 채널 기여도(%)를 기반으로 계산됩니다.</div>
+    <div id="mix-channel-table"></div>
+  </div>
+</div>
+
+<!-- TAB 2: 채널별 시뮬레이터 -->
+<div id="tab-sim" class="tab-content">
+  <div class="card">
+    <div class="card-title">📋 현재 채널별 재고 현황 (W14 기준)</div>
+    <div id="stock-summary"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚙️ 채널별 월 Sell Thru 목표 입력</div>
+    <div class="info-box">각 채널별로 Apr~Dec 월 Sell Thru 목표를 입력하세요. [목표 WOS 역산] 버튼으로 자동 채울 수 있습니다.</div>
+    <div id="sim-input-area"></div>
+    <div class="btn-group" style="margin-top:10px">
+      <button class="btn btn-primary" onclick="fillTargetWOS()">🎯 목표 WOS로 역산</button>
+      <button class="btn btn-success" onclick="runSimulation()">▶ 시뮬레이션 실행</button>
+      <button class="btn btn-info" onclick="exportSimCSV()">📥 CSV 내보내기</button>
+    </div>
+    <div id="sim-result"></div>
+  </div>
+</div>
+
+<!-- TAB 3: 연도별 트렌드 -->
+<div id="tab-trend" class="tab-content">
+  <div class="card">
+    <div class="card-title">📅 연도별 카테고리별 셀아웃 트렌드 (YoY 성장률)</div>
+    <div id="trend-table"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🏆 카테고리별 모델 믹스 현황 (2025~2026 누계)</div>
+    <div class="chips" id="trend-cat-chips"></div>
+    <div id="model-mix-detail"></div>
+  </div>
+</div>
+
+<script>
+const _DATA = {"model_mix": {"Split AC": [{"model": "ND182C", "btu": "18000", "comp": "Inverter", "type": "CO", "qty": 9753, "pct": 10.85}, {"model": "ND242C", "btu": "24000", "comp": "Inverter", "type": "CO", "qty": 9315, "pct": 10.36}, {"model": "LO182C", "btu": "18000", "comp": "Rotary", "type": "CO", "qty": 8578, "pct": 9.54}, {"model": "LO242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 5496, "pct": 6.12}, {"model": "NS182C", "btu": "18000", "comp": "Inverter", "type": "CO", "qty": 5425, "pct": 6.04}, {"model": "NW182C", "btu": "", "comp": "", "type": "", "qty": 4505, "pct": 5.01}, {"model": "NS242C", "btu": "24000", "comp": "Inverter", "type": "CO", "qty": 4350, "pct": 4.84}, {"model": "LB182C", "btu": "18000", "comp": "Rotary", "type": "CO", "qty": 3891, "pct": 4.33}, {"model": "LB242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 3698, "pct": 4.11}, {"model": "ND182H", "btu": "18000", "comp": "Inverter", "type": "HP", "qty": 3467, "pct": 3.86}, {"model": "ND242H", "btu": "24000", "comp": "Inverter", "type": "HP", "qty": 3421, "pct": 3.81}, {"model": "NT382C", "btu": "38000", "comp": "Inverter", "type": "CO", "qty": 2727, "pct": 3.03}, {"model": "LA182C", "btu": "18000", "comp": "Rotary", "type": "CO", "qty": 2581, "pct": 2.87}, {"model": "LA242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 2276, "pct": 2.53}, {"model": "NW182H", "btu": "", "comp": "", "type": "", "qty": 2084, "pct": 2.32}, {"model": "NS182H", "btu": "18000", "comp": "Inverter", "type": "HP", "qty": 2006, "pct": 2.23}, {"model": "NW242C", "btu": "", "comp": "", "type": "", "qty": 2005, "pct": 2.23}, {"model": "NF122C", "btu": "12000", "comp": "Inverter", "type": "CO", "qty": 1465, "pct": 1.63}, {"model": "LO182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 1377, "pct": 1.53}, {"model": "LO242H", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 1247, "pct": 1.39}, {"model": "NW242H", "btu": "", "comp": "", "type": "", "qty": 1154, "pct": 1.28}, {"model": "LA242H", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 1151, "pct": 1.28}, {"model": "AM242C", "btu": "24000", "comp": "Inverter", "type": "CO", "qty": 1150, "pct": 1.28}, {"model": "NS242H", "btu": "24000", "comp": "Inverter", "type": "HP", "qty": 1131, "pct": 1.26}, {"model": "NF122H", "btu": "", "comp": "", "type": "HP", "qty": 989, "pct": 1.1}, {"model": "NT382H", "btu": "38000", "comp": "Inverter", "type": "HP", "qty": 821, "pct": 0.91}, {"model": "AM182C", "btu": "18000", "comp": "Inverter", "type": "CO", "qty": 783, "pct": 0.87}, {"model": "LB182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 667, "pct": 0.74}, {"model": "LA182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 634, "pct": 0.71}, {"model": "LB242H", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 403, "pct": 0.45}, {"model": "LA302C", "btu": "30000", "comp": "Rotary", "type": "CO", "qty": 284, "pct": 0.32}, {"model": "LK242C", "btu": "23000", "comp": "Rotary", "type": "CO", "qty": 147, "pct": 0.16}, {"model": "LA302H", "btu": "30000", "comp": "Rotary", "type": "HP", "qty": 124, "pct": 0.14}, {"model": "NF182C", "btu": "18000", "comp": "Inverter", "type": "", "qty": 110, "pct": 0.12}, {"model": "LK182C", "btu": "18200", "comp": "Rotary", "type": "CO", "qty": 89, "pct": 0.1}, {"model": "NF242C", "btu": "24000", "comp": "Inverter", "type": "", "qty": 84, "pct": 0.09}, {"model": "NJ242C", "btu": "24000", "comp": "Rotary", "type": "", "qty": 69, "pct": 0.08}, {"model": "LK242H", "btu": "23000", "comp": "Rotary", "type": "HP", "qty": 63, "pct": 0.07}, {"model": "NF242H", "btu": "24000", "comp": "Inverter", "type": "HP", "qty": 40, "pct": 0.04}, {"model": "LK182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 39, "pct": 0.04}, {"model": "NG182C", "btu": "", "comp": "", "type": "", "qty": 35, "pct": 0.04}, {"model": "NF182H", "btu": "18000", "comp": "Inverter", "type": "", "qty": 30, "pct": 0.03}, {"model": "NV242C", "btu": "24000", "comp": "Inverter", "type": "", "qty": 29, "pct": 0.03}, {"model": "AF242C0N20", "btu": "", "comp": "", "type": "", "qty": 27, "pct": 0.03}, {"model": "AF242C", "btu": "", "comp": "", "type": "", "qty": 22, "pct": 0.02}, {"model": "AF182C", "btu": "", "comp": "", "type": "", "qty": 16, "pct": 0.02}, {"model": "NV242H", "btu": "24000", "comp": "Inverter", "type": "", "qty": 13, "pct": 0.01}, {"model": "NV182H", "btu": "18000", "comp": "Inverter", "type": "", "qty": 13, "pct": 0.01}, {"model": "AF182C0N20", "btu": "", "comp": "", "type": "", "qty": 13, "pct": 0.01}, {"model": "LH302C", "btu": "30000", "comp": "Rotary", "type": "CO", "qty": 11, "pct": 0.01}, {"model": "NV182C", "btu": "18000", "comp": "Inverter", "type": "", "qty": 10, "pct": 0.01}, {"model": "NJ182C", "btu": "18000", "comp": "Rotary", "type": "", "qty": 10, "pct": 0.01}, {"model": "LC242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 8, "pct": 0.01}, {"model": "NG182H", "btu": "", "comp": "", "type": "", "qty": 7, "pct": 0.01}, {"model": "LT302H", "btu": "30000", "comp": "Rotary", "type": "HP", "qty": 6, "pct": 0.01}, {"model": "LT302C", "btu": "28000", "comp": "Rotary", "type": "CO", "qty": 6, "pct": 0.01}, {"model": "LH242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 5, "pct": 0.01}, {"model": "LC242H", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 5, "pct": 0.01}, {"model": "NG242C", "btu": "", "comp": "", "type": "", "qty": 4, "pct": 0.0}, {"model": "LC182C", "btu": "18000", "comp": "Rotary", "type": "CO", "qty": 3, "pct": 0.0}, {"model": "NG242H", "btu": "", "comp": "", "type": "", "qty": 2, "pct": 0.0}, {"model": "LC182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 2, "pct": 0.0}, {"model": "NF12H", "btu": "12000", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 0.0}], "Floor Standing AC": [{"model": "APNQ55GT3M", "btu": "48000", "comp": "Inverter", "type": "CO", "qty": 5860, "pct": 62.03}, {"model": "APNQ55GT3MA", "btu": "48000", "comp": "Inverter", "type": "CO", "qty": 1864, "pct": 19.73}, {"model": "APUW55GT3M", "btu": "48000", "comp": "Inverter", "type": "CO", "qty": 856, "pct": 9.06}, {"model": "APNW55GT3M", "btu": "48000", "comp": "Inverter", "type": "HP", "qty": 480, "pct": 5.08}, {"model": "APNQ55GT3E6", "btu": "48000", "comp": "Inverter", "type": "CO", "qty": 265, "pct": 2.81}, {"model": "APNW55GT3MA", "btu": "46000", "comp": "Inverter", "type": "HP", "qty": 82, "pct": 0.87}, {"model": "APNW55GT3E6", "btu": "46000", "comp": "Inverter", "type": "HP", "qty": 22, "pct": 0.23}, {"model": "(excluded)", "btu": "48000", "comp": "Inverter", "type": "HP", "qty": 11, "pct": 0.12}, {"model": "APUW55GT3E6", "btu": "46000", "comp": "Inverter", "type": "CO", "qty": 7, "pct": 0.07}], "Window AC": [{"model": "C182EC", "btu": "18000", "comp": "Rotary", "type": "", "qty": 15812, "pct": 72.34}, {"model": "C182EH", "btu": "18000", "comp": "Rotary", "type": "", "qty": 3294, "pct": 15.07}, {"model": "C242EC", "btu": "24000", "comp": "Rotary", "type": "", "qty": 2614, "pct": 11.96}, {"model": "H182EC", "btu": "18000", "comp": "Rotary", "type": "", "qty": 105, "pct": 0.48}, {"model": "H182EH", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 20, "pct": 0.09}, {"model": "H242EH", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 8, "pct": 0.04}, {"model": "H242EC", "btu": "24000", "comp": "Rotary", "type": "", "qty": 4, "pct": 0.02}], "Concealed Set": [{"model": "ABUQ60GM3TA", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 92, "pct": 25.34}, {"model": "AUUQ60GT6", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 57, "pct": 15.7}, {"model": "AUUQ40GT6", "btu": "34000", "comp": "Inverter", "type": "CO", "qty": 30, "pct": 8.26}, {"model": "ABNQ60GM3TA", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 24, "pct": 6.61}, {"model": "ABNW21GM1", "btu": "18000", "comp": "Inverter", "type": "HP", "qty": 17, "pct": 4.68}, {"model": "ABNQ60GM3", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 16, "pct": 4.41}, {"model": "AUUW60GT6", "btu": "51000", "comp": "Inverter", "type": "HP", "qty": 15, "pct": 4.13}, {"model": "ABNQ55GM3", "btu": "47000", "comp": "Inverter", "type": "CO", "qty": 12, "pct": 3.31}, {"model": "ABUQ40GM3TA", "btu": "34000", "comp": "Inverter", "type": "CO", "qty": 10, "pct": 2.75}, {"model": "ABNW40GM3", "btu": "34000", "comp": "Inverter", "type": "HP", "qty": 10, "pct": 2.75}, {"model": "AUUQ34GT6-C", "btu": "26400", "comp": "Inverter", "type": "CO", "qty": 9, "pct": 2.48}, {"model": "ABNW60GM3", "btu": "52000", "comp": "Inverter", "type": "HP", "qty": 9, "pct": 2.48}, {"model": "AUUQ55GT6-C", "btu": "47000", "comp": "Inverter", "type": "CO", "qty": 8, "pct": 2.2}, {"model": "ABNQ40GM3", "btu": "34000", "comp": "Inverter", "type": "CO", "qty": 8, "pct": 2.2}, {"model": "AUUW40GT6-C", "btu": "32000", "comp": "Inverter", "type": "HP", "qty": 7, "pct": 1.93}, {"model": "AUUW55GT6-C", "btu": "47000", "comp": "Inverter", "type": "HP", "qty": 5, "pct": 1.38}, {"model": "ABNW34GM3", "btu": "26400", "comp": "Inverter", "type": "HP", "qty": 5, "pct": 1.38}, {"model": "ABNW28GM1", "btu": "22000", "comp": "Inverter", "type": "HP", "qty": 4, "pct": 1.1}, {"model": "ABNW55GM3", "btu": "47000", "comp": "Inverter", "type": "HP", "qty": 4, "pct": 1.1}, {"model": "ABUQ28GM1TA", "btu": "22000", "comp": "Inverter", "type": "CO", "qty": 3, "pct": 0.83}, {"model": "AUUQ21GT6-C", "btu": "16200", "comp": "Inverter", "type": "CO", "qty": 2, "pct": 0.55}, {"model": "AUUW28GT6-C", "btu": "22000", "comp": "Inverter", "type": "HP", "qty": 2, "pct": 0.55}, {"model": "ABUW60GM3", "btu": "52000", "comp": "Inverter", "type": "HP", "qty": 2, "pct": 0.55}, {"model": "ABNW40GM3TA", "btu": "34000", "comp": "Inverter", "type": "HP", "qty": 2, "pct": 0.55}, {"model": "ABNW60GM3TA", "btu": "51000", "comp": "Inverter", "type": "HP", "qty": 2, "pct": 0.55}, {"model": "ABUQ34GM3TA", "btu": "26400", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 0.28}, {"model": "ABUQ55GM3TA", "btu": "47000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 0.28}, {"model": "AUUW21GT6", "btu": "17000", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 0.28}, {"model": "ABUW34GM3", "btu": "26400", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 0.28}, {"model": "ABUW28GM1", "btu": "22000", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 0.28}, {"model": "ABN6536MT6", "btu": "", "comp": "Inverter", "type": "", "qty": 1, "pct": 0.28}, {"model": "ABNQ60LM3", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 0.28}, {"model": "ABNQ60LM3T6", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 0.28}], "Cassette AC": [{"model": "AM182C", "btu": "18000", "comp": "Inverter", "type": "CO", "qty": 7, "pct": 35.0}, {"model": "GTNW34GNL", "btu": "26400", "comp": "Inverter", "type": "HP", "qty": 5, "pct": 25.0}, {"model": "AUUQ60GT6", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 4, "pct": 20.0}, {"model": "ATUQ28GPL", "btu": "22000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 5.0}, {"model": "ATNW21GPL", "btu": "18000", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 5.0}, {"model": "ATNQ34GNLT6", "btu": "26000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 5.0}, {"model": "AUUQ34GT6", "btu": "26000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 5.0}]}, "channel_mix": {"Split AC": {"eXtra": 39.41, "Al Manea": 20.9, "BH": 16.89, "SWS": 6.64, "Black Box": 5.45, "Tamkeen": 3.28, "BM": 1.98, "Dhamin": 1.83, "Al Khunizan": 1.33, "Star Appliance": 0.95, "Zagzoog": 0.59, "Al Shathri": 0.53, "Al Ghanem": 0.22}, "Floor Standing AC": {"BH": 53.94, "Al Manea": 8.9, "Tamkeen": 7.52, "Al Khunizan": 7.39, "Al Shathri": 5.35, "BM": 4.65, "eXtra": 4.31, "Star Appliance": 3.18, "SWS": 1.93, "Al Ghanem": 1.66, "Black Box": 0.64, "Dhamin": 0.55}, "Window AC": {"BH": 41.3, "Al Manea": 30.9, "eXtra": 26.08, "Black Box": 1.03, "BM": 0.57, "Dhamin": 0.11, "Tamkeen": 0.01}, "Concealed Set": {"BH": 59.5, "Star Appliance": 13.77, "Al Shathri": 11.02, "BM": 5.51, "SWS": 3.31, "Al Manea": 2.2, "Al Khunizan": 2.2, "Al Ghanem": 1.38, "Dhamin": 0.83, "Black Box": 0.28}, "Cassette AC": {"Al Shathri": 35.0, "Al Khunizan": 30.0, "BM": 25.0, "BH": 5.0, "Al Ghanem": 5.0}}, "channel_stock": {"BH": {"group": "IR", "stock": 7356, "wos": 52.3, "wos_opportunity": 12, "wos_healthy": 24}, "BM": {"group": "IR", "stock": 459, "wos": 14.1, "wos_opportunity": 12, "wos_healthy": 24}, "Tamkeen": {"group": "IR", "stock": 1456, "wos": 17.4, "wos_opportunity": 12, "wos_healthy": 24}, "Zagzoog": {"group": "IR", "stock": 808, "wos": 49.9, "wos_opportunity": 12, "wos_healthy": 24}, "Dhamin": {"group": "IR", "stock": 692, "wos": 21.2, "wos_opportunity": 12, "wos_healthy": 24}, "Star Appliance": {"group": "IR", "stock": 419, "wos": 19.7, "wos_opportunity": 12, "wos_healthy": 24}, "Al Ghanem": {"group": "IR", "stock": 351, "wos": 39.9, "wos_opportunity": 12, "wos_healthy": 24}, "Al Shathri": {"group": "IR", "stock": 331, "wos": 12.6, "wos_opportunity": 12, "wos_healthy": 24}, "eXtra": {"group": "OR", "stock": 9455, "wos": 17.2, "wos_opportunity": 6, "wos_healthy": 8}, "Al Manea": {"group": "OR", "stock": 2209, "wos": 18.5, "wos_opportunity": 6, "wos_healthy": 8}, "SWS": {"group": "OR", "stock": 365, "wos": 3.8, "wos_opportunity": 6, "wos_healthy": 8}, "Black Box": {"group": "OR", "stock": 536, "wos": 6.8, "wos_opportunity": 6, "wos_healthy": 8}, "Al Khunizan": {"group": "OR", "stock": 951, "wos": 41.6, "wos_opportunity": 6, "wos_healthy": 8}}, "yoy_growth": {"Split AC": {"Jan": 1.539, "Feb": 0.614, "Mar": 1.027, "Apr": 1.04, "May": 0.587, "Jun": 0.553, "Jul": 1.004, "Aug": 1.392, "Sep": 1.049, "Oct": 1.023, "Nov": 0.861, "Dec": 0.419}, "Floor Standing AC": {"Jan": 1.229, "Feb": 2.793, "Mar": 1.318, "Apr": 1.287, "May": 1.224, "Jun": 0.588, "Jul": 0.976, "Aug": 1.238, "Sep": 1.308, "Oct": 1.308, "Nov": 0.565, "Dec": 0.412}, "Window AC": {"Jan": 1.0, "Feb": 37.682, "Mar": 45.112, "Apr": 55.471, "May": 0.805, "Jun": 0.187, "Jul": 7.4, "Aug": 1.0, "Sep": 0.0, "Oct": 1.0, "Nov": 0.0, "Dec": 1.0}, "Concealed Set": {"Jan": 1.0, "Feb": 1.0, "Mar": 1.0, "Apr": 1.0, "May": 1.0, "Jun": 1.0, "Jul": 1.0, "Aug": 1.0, "Sep": 1.0, "Oct": 1.0, "Nov": 1.0, "Dec": 1.0}, "Cassette AC": {"Jan": 1.0, "Feb": 1.0, "Mar": 1.0, "Apr": 1.0, "May": 1.0, "Jun": 1.0, "Jul": 1.0, "Aug": 1.0, "Sep": 1.0, "Oct": 1.0, "Nov": 1.0, "Dec": 1.0}}, "actual_2026": {"Split AC": {"Jan": 3761, "Feb": 7659, "Mar": 6943}, "Floor Standing AC": {"Jan": 418, "Feb": 585, "Mar": 446}, "Window AC": {"Feb": 41, "Mar": 23}, "Concealed Set": {"Jan": 132, "Feb": 99, "Mar": 132}, "Cassette AC": {"Jan": 12, "Feb": 4, "Mar": 4}}, "categories": ["Split AC", "Floor Standing AC", "Window AC", "Concealed Set", "Cassette AC"], "channels": ["BH", "BM", "Tamkeen", "Zagzoog", "Dhamin", "Star Appliance", "Al Ghanem", "Al Shathri", "eXtra", "Al Manea", "SWS", "Black Box", "Al Khunizan"], "future_months": ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]};
+
+const CATEGORIES = _DATA.categories;
+const CHANNELS = _DATA.channels;
+const FUTURE_MONTHS = _DATA.future_months;
+const MODEL_MIX = _DATA.model_mix;
+const CHANNEL_MIX = _DATA.channel_mix;
+const CHANNEL_STOCK = _DATA.channel_stock;
+const YOY = _DATA.yoy_growth;
+const ACTUAL_2026 = _DATA.actual_2026;
+
+let mixResults = null;  // Store last distribution result
+
+// ─── Tab switch ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const ids = ['mix','sim','trend'];
+    t.classList.toggle('active', ids[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name === 'mix' && !document.querySelector('#mix-input-area .input-grid')) buildMixInputs();
+  if (name === 'sim' && !document.querySelector('#stock-summary table')) buildSimTab();
+  if (name === 'trend') buildTrendTab();
+}
+
+// ─── TAB 1: MODEL MIX ───────────────────────────────────────────────────────
+function buildMixInputs() {
+  const area = document.getElementById('mix-input-area');
+  let html = '';
+  CATEGORIES.forEach(cat => {
+    const actual = ACTUAL_2026[cat] || {};
+    html += `<div style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:#0f3460;margin-bottom:6px;padding:4px 8px;background:#e3f2fd;border-radius:4px">
+        ${cat}
+        ${actual.Jan ? `<span style="font-weight:400;font-size:11px;color:#555;margin-left:8px">2026 실적: Jan=${fmt(actual.Jan)} Feb=${fmt(actual.Feb||0)} Mar=${fmt(actual.Mar||0)}</span>` : ''}
+      </div>
+      <div class="input-grid">`;
+    FUTURE_MONTHS.forEach(m => {
+      html += `<div class="input-item">
+        <label>${m}</label>
+        <input type="number" id="mix-${cat}-${m}" placeholder="0" min="0" value="">
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  area.innerHTML = html;
+}
+
+function applyAutoTrend() {
+  // Fill inputs using YoY growth from 2025 actual
+  // We approximate 2025 monthly from the YoY data
+  // Strategy: use Mar 2026 actual as base, apply seasonal pattern from 2025 growth
+  const apr2026_basis = {};
+  CATEGORIES.forEach(cat => {
+    const actual = ACTUAL_2026[cat] || {};
+    const mar = actual.Mar || 0;
+    const yoy = YOY[cat] || {};
+    apr2026_basis[cat] = mar;
+    FUTURE_MONTHS.forEach(m => {
+      const growth = yoy[m] || 1.0;
+      const base = mar || 100;
+      const est = Math.round(base * growth);
+      const el = document.getElementById(`mix-${cat}-${m}`);
+      if (el && !el.value) el.value = est || '';
+    });
+  });
+  alert('YoY 트렌드 자동 채우기 완료!\n2026년 3월 실적 × 월별 YoY 성장률(2024→2025)로 추정했습니다.\n값을 직접 수정하셔도 됩니다.');
+}
+
+function runMixDistribution() {
+  // Collect inputs
+  const input = {};
+  CATEGORIES.forEach(cat => {
+    input[cat] = {};
+    FUTURE_MONTHS.forEach(m => {
+      const el = document.getElementById(`mix-${cat}-${m}`);
+      const v = parseInt(el?.value || '0') || 0;
+      if (v > 0) input[cat][m] = v;
+    });
+  });
+
+  // Check if any input
+  const hasInput = Object.values(input).some(ci => Object.values(ci).some(v => v > 0));
+  if (!hasInput) {
+    alert('수량을 입력해주세요!');
+    return;
+  }
+
+  // Distribute to models
+  mixResults = {};
+  CATEGORIES.forEach(cat => {
+    const models = MODEL_MIX[cat] || [];
+    const chMix = CHANNEL_MIX[cat] || {};
+    mixResults[cat] = {};
+
+    FUTURE_MONTHS.forEach(m => {
+      const total = input[cat][m] || 0;
+      if (total === 0) return;
+      mixResults[cat][m] = {
+        total,
+        models: models.map(model => ({
+          model: model.model,
+          btu: model.btu,
+          comp: model.comp,
+          type: model.type,
+          qty: Math.round(total * model.pct / 100),
+          pct: model.pct,
+        })),
+        channels: Object.entries(chMix).map(([ch, pct]) => ({
+          ch, pct,
+          qty: Math.round(total * pct / 100)
+        }))
+      };
+    });
+  });
+
+  renderMixResults();
+}
+
+function renderMixResults() {
+  // Build category chips
+  const activeCats = CATEGORIES.filter(cat =>
+    Object.values(mixResults[cat] || {}).some(v => v && v.total > 0)
+  );
+  if (activeCats.length === 0) { alert('분배할 데이터가 없습니다.'); return; }
+
+  const chipsEl = document.getElementById('mix-cat-chips');
+  chipsEl.innerHTML = activeCats.map((cat, i) =>
+    `<span class="chip ${i===0?'active':''}" onclick="selectMixCat('${cat}',this)">${cat}</span>`
+  ).join('');
+
+  document.getElementById('mix-result-card').style.display = 'block';
+  document.getElementById('mix-channel-card').style.display = 'block';
+  selectMixCat(activeCats[0], chipsEl.querySelector('.chip'));
+}
+
+function selectMixCat(cat, el) {
+  document.querySelectorAll('#mix-cat-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+
+  const data = mixResults[cat] || {};
+  const activeMonths = FUTURE_MONTHS.filter(m => data[m]);
+  if (activeMonths.length === 0) { document.getElementById('mix-result-table').innerHTML = '<p style="color:#999">데이터 없음</p>'; return; }
+
+  // Collect all models across months
+  const allModels = new Set();
+  activeMonths.forEach(m => {
+    (data[m]?.models || []).forEach(r => allModels.add(r.model));
+  });
+
+  // Build table
+  let html = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Model</th><th>BTU</th><th>Comp</th><th>Type</th>`;
+  activeMonths.forEach(m => html += `<th>${m}<br><span style="font-size:10px;font-weight:400">${fmt(data[m].total)}</span></th>`);
+  html += `<th>합계</th><th>기여율</th></tr></thead><tbody>`;
+
+  // Grand total per month
+  const grandTotal = {};
+  activeMonths.forEach(m => grandTotal[m] = data[m].total);
+  const grandSum = Object.values(grandTotal).reduce((a,b)=>a+b,0);
+
+  // Sort models by total qty
+  const modelTotals = {};
+  allModels.forEach(model => {
+    modelTotals[model] = activeMonths.reduce((sum, m) => {
+      const r = (data[m]?.models||[]).find(x=>x.model===model);
+      return sum + (r?.qty||0);
+    }, 0);
+  });
+  const sortedModels = [...allModels].sort((a,b) => modelTotals[b]-modelTotals[a]);
+
+  sortedModels.forEach(model => {
+    const info = (MODEL_MIX[cat]||[]).find(x=>x.model===model)||{};
+    const total = modelTotals[model];
+    const pct = grandSum>0 ? (total/grandSum*100).toFixed(1) : '0';
+    html += `<tr><td>${model}</td><td>${info.btu||''}</td><td>${info.comp||''}</td><td>${info.type||''}`;
+    html += `</td>`;
+    activeMonths.forEach(m => {
+      const r = (data[m]?.models||[]).find(x=>x.model===model);
+      html += `<td class="num">${fmt(r?.qty||0)}</td>`;
+    });
+    const barW = grandSum>0 ? Math.max(2, Math.round(total/grandSum*100)) : 0;
+    html += `<td class="num">${fmt(total)}</td>`;
+    html += `<td><span class="bar" style="width:${barW}px"></span> ${pct}%</td></tr>`;
+  });
+
+  // Total row
+  html += `<tr style="font-weight:700;background:#f0f4ff">
+    <td colspan="4">합계</td>`;
+  activeMonths.forEach(m => html += `<td class="num">${fmt(grandTotal[m])}</td>`);
+  html += `<td class="num">${fmt(grandSum)}</td><td>100%</td></tr>`;
+  html += `</tbody></table></div>`;
+  document.getElementById('mix-result-table').innerHTML = html;
+
+  // Channel distribution table
+  let chHtml = `<div class="tbl-wrap"><table>
+    <thead><tr><th>채널</th>`;
+  activeMonths.forEach(m => chHtml += `<th>${m}</th>`);
+  chHtml += `<th>합계</th><th>기여율</th></tr></thead><tbody>`;
+
+  const allChannels = new Set();
+  activeMonths.forEach(m => (data[m]?.channels||[]).forEach(r => allChannels.add(r.ch)));
+  const chTotals = {};
+  allChannels.forEach(ch => {
+    chTotals[ch] = activeMonths.reduce((sum,m) => {
+      const r=(data[m]?.channels||[]).find(x=>x.ch===ch);
+      return sum+(r?.qty||0);
+    },0);
+  });
+  const sortedCh = [...allChannels].sort((a,b)=>chTotals[b]-chTotals[a]);
+  const chGrandSum = Object.values(chTotals).reduce((a,b)=>a+b,0);
+
+  sortedCh.forEach(ch => {
+    const total = chTotals[ch];
+    const pct = chGrandSum>0?(total/chGrandSum*100).toFixed(1):'0';
+    const stock = CHANNEL_STOCK[ch];
+    const grp = stock?.group || '';
+    chHtml += `<tr><td>${ch} <span class="badge ${grp==='IR'?'badge-blue':'badge-green'}">${grp}</span></td>`;
+    activeMonths.forEach(m => {
+      const r=(data[m]?.channels||[]).find(x=>x.ch===ch);
+      chHtml += `<td class="num">${fmt(r?.qty||0)}</td>`;
+    });
+    const barW = chGrandSum>0?Math.max(2,Math.round(total/chGrandSum*100)):0;
+    chHtml += `<td class="num">${fmt(total)}</td>`;
+    chHtml += `<td><span class="bar" style="width:${barW}px"></span> ${pct}%</td></tr>`;
+  });
+  chHtml += `<tr style="font-weight:700;background:#f0f4ff"><td>합계</td>`;
+  activeMonths.forEach(m => {
+    const t=(data[m]?.channels||[]).reduce((s,r)=>s+r.qty,0);
+    chHtml += `<td class="num">${fmt(t)}</td>`;
+  });
+  chHtml += `<td class="num">${fmt(chGrandSum)}</td><td>100%</td></tr>`;
+  chHtml += `</tbody></table></div>`;
+  document.getElementById('mix-channel-table').innerHTML = chHtml;
+}
+
+function exportMixCSV() {
+  if (!mixResults) { alert('먼저 분배 실행을 해주세요!'); return; }
+  let csv = 'Category,Model,BTU,Compressor,Type';
+  FUTURE_MONTHS.forEach(m => csv += `,${m}`);
+  csv += ',Total\n';
+  CATEGORIES.forEach(cat => {
+    const data = mixResults[cat] || {};
+    const activeMonths = FUTURE_MONTHS.filter(m => data[m]);
+    if (activeMonths.length === 0) return;
+    const allModels = new Set();
+    activeMonths.forEach(m => (data[m]?.models||[]).forEach(r => allModels.add(r.model)));
+    allModels.forEach(model => {
+      const info = (MODEL_MIX[cat]||[]).find(x=>x.model===model)||{};
+      let row = `"${cat}","${model}","${info.btu||''}","${info.comp||''}","${info.type||''}"`;
+      let total = 0;
+      FUTURE_MONTHS.forEach(m => {
+        const r = (data[m]?.models||[]).find(x=>x.model===model);
+        const q = r?.qty||0;
+        row += `,${q}`; total += q;
+      });
+      row += `,${total}`;
+      csv += row + '\n';
+    });
+  });
+  downloadCSV(csv, 'ModelMix_Distribution.csv');
+}
+
+function clearMixInputs() {
+  CATEGORIES.forEach(cat => FUTURE_MONTHS.forEach(m => {
+    const el = document.getElementById(`mix-${cat}-${m}`);
+    if (el) el.value = '';
+  }));
+  document.getElementById('mix-result-card').style.display = 'none';
+  document.getElementById('mix-channel-card').style.display = 'none';
+  mixResults = null;
+}
+
+// ─── TAB 2: CHANNEL SIM ──────────────────────────────────────────────────────
+function buildSimTab() {
+  // Stock summary
+  let html = `<div class="stat-grid">`;
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch];
+    if (!s) return;
+    const wos = s.wos;
+    const healthy = s.wos_healthy;
+    const opp = s.wos_opportunity;
+    let sig = wos === 0 ? 'INACTIVE' : wos < opp ? 'SHORTAGE' : wos < healthy ? 'OPPORTUNITY' : wos < healthy*2 ? 'HEALTHY' : 'OVERSTOCK';
+    const colors = {INACTIVE:'#9e9e9e',SHORTAGE:'#e74c3c',OPPORTUNITY:'#f39c12',HEALTHY:'#27ae60',OVERSTOCK:'#3498db'};
+    html += `<div class="stat-box">
+      <div style="font-size:11px;font-weight:600;color:#555">${ch} <span class="badge badge-${s.group==='IR'?'blue':'green'}">${s.group}</span></div>
+      <div class="val" style="color:${colors[sig]}">${wos}W</div>
+      <div class="lbl">${fmt(s.stock)} units</div>
+      <div><span class="trend ${sig==='HEALTHY'?'up':sig==='SHORTAGE'?'dn':'flat'}">${sig}</span></div>
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById('stock-summary').innerHTML = html;
+
+  // Sim input
+  let sinput = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Channel</th><th>Group</th><th>Current Stock</th><th>WOS</th>`;
+  FUTURE_MONTHS.forEach(m => sinput += `<th>${m}<br><small>Sell Thru</small></th>`);
+  sinput += `</tr></thead><tbody>`;
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch];
+    if (!s) return;
+    sinput += `<tr><td>${ch}</td><td>${s.group}</td><td class="num">${fmt(s.stock)}</td><td class="num">${s.wos}W</td>`;
+    FUTURE_MONTHS.forEach(m => {
+      sinput += `<td><input type="number" id="sim-${ch}-${m}" style="width:70px;padding:4px;border:1px solid #dde1e8;border-radius:3px;text-align:right;font-size:12px" min="0" value=""></td>`;
+    });
+    sinput += `</tr>`;
+  });
+  sinput += `</tbody></table></div>`;
+  document.getElementById('sim-input-area').innerHTML = sinput;
+}
+
+function fillTargetWOS() {
+  // Fill based on HEALTHY WOS target: monthly sell thru = stock / (healthy_wos/4.33)
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch];
+    if (!s) return;
+    const monthly = Math.round(s.stock / (s.wos_healthy / 4.33));
+    FUTURE_MONTHS.forEach(m => {
+      const el = document.getElementById(`sim-${ch}-${m}`);
+      if (el && !el.value) el.value = monthly || '';
+    });
+  });
+}
+
+function runSimulation() {
+  let html = `<div style="margin-top:12px"><div class="card-title">📊 시뮬레이션 결과 — 월말 예상 WOS</div>
+    <div class="tbl-wrap"><table>
+    <thead><tr><th>Channel</th>`;
+  FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>End WOS</small></th>`);
+  html += `<th>Target WOS</th></tr></thead><tbody>`;
+
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch];
+    if (!s) return;
+    let stock = s.stock;
+    html += `<tr><td>${ch}</td>`;
+    FUTURE_MONTHS.forEach(m => {
+      const el = document.getElementById(`sim-${ch}-${m}`);
+      const sellthru = parseInt(el?.value || 0) || 0;
+      const sellout_approx = sellthru; // simplified
+      stock = Math.max(0, stock - sellthru);
+      const wos = sellout_approx > 0 ? (stock / (sellout_approx / 4.33)) : 0;
+      const healthy = s.wos_healthy;
+      const opp = s.wos_opportunity;
+      let color = wos === 0 ? '#9e9e9e' : wos < opp ? '#e74c3c' : wos < healthy ? '#f39c12' : wos < healthy*2 ? '#27ae60' : '#3498db';
+      html += `<td class="num" style="color:${color};font-weight:600">${wos.toFixed(1)}W</td>`;
+    });
+    html += `<td class="num">${s.wos_healthy}W (HEALTHY)</td></tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+  document.getElementById('sim-result').innerHTML = html;
+}
+
+function exportSimCSV() {
+  let csv = 'Channel,Group,Month,Sell_Thru_Target\n';
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch];
+    FUTURE_MONTHS.forEach(m => {
+      const el = document.getElementById(`sim-${ch}-${m}`);
+      const v = el?.value || 0;
+      csv += `${ch},${s?.group||''},${m},${v}
+`;
+    });
+  });
+  downloadCSV(csv, 'Channel_SellThru_Sim.csv');
+}
+
+// ─── TAB 3: TREND ────────────────────────────────────────────────────────────
+function buildTrendTab() {
+  // YoY table
+  let html = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Category</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th></tr></thead>
+    <tbody>`;
+  const MONTHS_ALL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  CATEGORIES.forEach(cat => {
+    html += `<tr><td>${cat}</td>`;
+    MONTHS_ALL.forEach(m => {
+      const g = YOY[cat]?.[m];
+      if (!g) { html += `<td class="pct">—</td>`; return; }
+      const pct = ((g-1)*100).toFixed(0);
+      const cls = g>=1.1?'up':g<=0.9?'dn':'flat';
+      html += `<td class="pct"><span class="trend ${cls}">${pct>=0?'+':''}${pct}%</span></td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div>`;
+  document.getElementById('trend-table').innerHTML = html;
+
+  // Model mix chips
+  const chips = document.getElementById('trend-cat-chips');
+  chips.innerHTML = CATEGORIES.map((cat,i) =>
+    `<span class="chip ${i===0?'active':''}" onclick="showModelMix('${cat}',this)">${cat}</span>`
+  ).join('');
+  showModelMix(CATEGORIES[0], chips.querySelector('.chip'));
+}
+
+function showModelMix(cat, el) {
+  document.querySelectorAll('#trend-cat-chips .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const models = MODEL_MIX[cat] || [];
+  if (models.length === 0) { document.getElementById('model-mix-detail').innerHTML='<p>데이터 없음</p>'; return; }
+  const top50 = models.slice(0, 50);
+  const maxQty = top50[0]?.qty || 1;
+  let html = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Rank</th><th>Model</th><th>BTU</th><th>Compressor</th><th>Type</th><th>2025~26 수량</th><th>믹스 비율</th><th>비율 시각화</th></tr></thead><tbody>`;
+  top50.forEach((m, i) => {
+    const barW = Math.round(m.qty / maxQty * 120);
+    html += `<tr>
+      <td class="num">${i+1}</td>
+      <td>${m.model}</td>
+      <td>${m.btu}</td>
+      <td>${m.comp}</td>
+      <td>${m.type}</td>
+      <td class="num">${fmt(m.qty)}</td>
+      <td class="pct">${m.pct}%</td>
+      <td><span class="bar" style="width:${barW}px"></span></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  document.getElementById('model-mix-detail').innerHTML = html;
+}
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+function fmt(n) { return (n||0).toLocaleString(); }
+
+function downloadCSV(csv, filename) {
+  const bom = '﻿';
+  const blob = new Blob([bom+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+buildMixInputs();
+</script>
+</body>
+</html>
