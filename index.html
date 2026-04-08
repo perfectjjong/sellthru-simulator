@@ -106,6 +106,35 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
 
 /* Seasonality chart */
 .season-bar { display: inline-block; height: 20px; border-radius: 2px; margin-right: 2px; vertical-align: bottom; }
+
+/* Parameter Panel */
+.param-panel { background: #1a1a2e; border-bottom: 2px solid #4fc3f7; }
+.param-toggle { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; cursor: pointer; color: #a0b4cc; font-size: 12px; }
+.param-toggle:hover { color: #4fc3f7; }
+.param-toggle .arrow { transition: transform .2s; }
+.param-toggle.open .arrow { transform: rotate(180deg); }
+.param-body { display: none; padding: 12px 16px; background: #f8fafd; max-height: 500px; overflow-y: auto; }
+.param-body.open { display: block; }
+.param-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.param-section { background: white; border: 1px solid #e0e6f0; border-radius: 6px; padding: 10px; }
+.param-section-title { font-size: 12px; font-weight: 700; color: #0f3460; margin-bottom: 8px; border-bottom: 1px solid #e0e6f0; padding-bottom: 4px; }
+.param-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.param-row label { font-size: 11px; color: #555; font-weight: 600; min-width: 80px; }
+.param-row select, .param-row input[type="number"] { padding: 4px 6px; border: 1px solid #dde1e8; border-radius: 4px; font-size: 12px; }
+.param-row select { min-width: 120px; }
+.param-row input[type="number"] { width: 70px; text-align: right; }
+.param-row input[type="range"] { flex: 1; min-width: 80px; }
+.param-impact { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; display: inline-block; }
+.param-impact.boost { background: #e8f5e9; color: #2e7d32; }
+.param-impact.neutral { background: #f5f5f5; color: #888; }
+.param-impact.dampen { background: #ffebee; color: #c62828; }
+.promo-matrix { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px; }
+.promo-matrix th, .promo-matrix td { padding: 3px 5px; text-align: center; border: 1px solid #e0e6f0; }
+.promo-matrix th { background: #e3f2fd; font-weight: 600; }
+.promo-win { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+.promo-lose { background: #ffebee; color: #c62828; font-weight: 600; }
+.promo-draw { background: #fff9e6; color: #f57f17; font-weight: 600; }
+.env-mini-input { width: 55px !important; padding: 3px 4px !important; font-size: 11px !important; text-align: right; border: 1px solid #dde1e8; border-radius: 3px; }
 </style>
 </head>
 <body>
@@ -122,6 +151,161 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
   <div class="tab" onclick="switchTab('annual')">📊 연간 뷰</div>
   <div class="tab" onclick="switchTab('trend')">📅 트렌드</div>
   <div class="tab" onclick="switchTab('backtest')">🔬 백테스트</div>
+</div>
+
+<!-- OPTION PARAMETER PANEL -->
+<div class="param-panel">
+  <div class="param-toggle" onclick="toggleParamPanel(this)">
+    <span>⚙️ 옵션 파라미터 설정 <span style="color:#4fc3f7;font-weight:600" id="param-summary">(기본값)</span></span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="param-body" id="param-body">
+    <div class="param-grid">
+
+      <!-- 1. 공급전략 -->
+      <div class="param-section">
+        <div class="param-section-title">1️⃣ 공급전략 (분기별 공급 강도)</div>
+        <div class="param-row">
+          <label>전략 모드</label>
+          <select id="p-supply-mode" onchange="applySupplyPreset(this.value);updateParamSummary()">
+            <option value="even">균등 공급</option>
+            <option value="front" selected>전반기 집중 (Q2-Q3↑ Q4↓)</option>
+            <option value="back">후반기 집중 (Q2-Q3↓ Q4↑)</option>
+            <option value="custom">사용자 지정</option>
+          </select>
+        </div>
+        <div class="param-row">
+          <label>Q2 (Apr-Jun)</label>
+          <input type="range" id="p-supply-q2" min="50" max="150" value="120" oninput="this.nextElementSibling.textContent=this.value+'%';updateParamSummary()">
+          <span style="font-size:11px;font-weight:600;min-width:35px">120%</span>
+        </div>
+        <div class="param-row">
+          <label>Q3 (Jul-Sep)</label>
+          <input type="range" id="p-supply-q3" min="50" max="150" value="110" oninput="this.nextElementSibling.textContent=this.value+'%';updateParamSummary()">
+          <span style="font-size:11px;font-weight:600;min-width:35px">110%</span>
+        </div>
+        <div class="param-row">
+          <label>Q4 (Oct-Dec)</label>
+          <input type="range" id="p-supply-q4" min="50" max="150" value="70" oninput="this.nextElementSibling.textContent=this.value+'%';updateParamSummary()">
+          <span style="font-size:11px;font-weight:600;min-width:35px">70%</span>
+        </div>
+        <div style="font-size:10px;color:#888;margin-top:4px">공급/재고 시뮬에서 Sell-In에 적용됩니다.</div>
+      </div>
+
+      <!-- 2. 수요가정 -->
+      <div class="param-section">
+        <div class="param-section-title">2️⃣ 수요가정 (카테고리별 성장률 조정)</div>
+        <div class="param-row">
+          <label>전체 조정</label>
+          <input type="range" id="p-demand-all" min="-30" max="30" value="0" oninput="applyDemandAll(this.value);updateParamSummary()">
+          <span style="font-size:11px;font-weight:600;min-width:35px" id="p-demand-all-lbl">±0%p</span>
+        </div>
+        <div id="p-demand-cats"></div>
+        <div style="font-size:10px;color:#888;margin-top:4px">YoY 기본 성장률에 추가 적용됩니다.</div>
+      </div>
+
+      <!-- 3. 재고기준 -->
+      <div class="param-section">
+        <div class="param-section-title">3️⃣ 재고기준 (WOS 목표)</div>
+        <div class="param-row">
+          <label>IR 목표 WOS</label>
+          <input type="number" id="p-wos-ir" value="24" min="4" max="52" onchange="updateParamSummary()">
+          <span style="font-size:11px;color:#888">주 (기본: 24)</span>
+        </div>
+        <div class="param-row">
+          <label>OR 목표 WOS</label>
+          <input type="number" id="p-wos-or" value="8" min="2" max="24" onchange="updateParamSummary()">
+          <span style="font-size:11px;color:#888">주 (기본: 8)</span>
+        </div>
+        <div class="param-row">
+          <label>SHORTAGE</label>
+          <span style="font-size:11px;color:#e74c3c">IR &lt; <input type="number" id="p-wos-ir-short" value="12" min="1" max="52" class="env-mini-input">W</span>
+          <span style="font-size:11px;color:#e74c3c">OR &lt; <input type="number" id="p-wos-or-short" value="6" min="1" max="24" class="env-mini-input">W</span>
+        </div>
+        <div style="font-size:10px;color:#888;margin-top:4px">공급/재고 시뮬의 기본 목표 WOS에 반영됩니다.</div>
+      </div>
+
+      <!-- 4. 모델믹스 -->
+      <div class="param-section">
+        <div class="param-section-title">4️⃣ 모델믹스 (카테고리 비중 조정)</div>
+        <div id="p-modelmix-cats"></div>
+        <div style="font-size:10px;color:#888;margin-top:4px">모델별 분배 시 카테고리 가중치에 적용됩니다.</div>
+      </div>
+
+      <!-- 6. 프로모션 -->
+      <div class="param-section" style="grid-column:span 1">
+        <div class="param-section-title">6️⃣ 프로모션 (자사 vs 경쟁사)</div>
+        <div class="param-row">
+          <label>자사 등급</label>
+          <select id="p-promo-own" onchange="updatePromoMatrix();updateParamSummary()">
+            <option value="A">Promo A (기본)</option>
+            <option value="B">Promo B (중간)</option>
+            <option value="C">Promo C (공격)</option>
+            <option value="T">Tactical (최대 공격)</option>
+          </select>
+        </div>
+        <div class="param-row">
+          <label>경쟁사 등급</label>
+          <select id="p-promo-comp" onchange="updatePromoMatrix();updateParamSummary()">
+            <option value="A">Promo A (기본)</option>
+            <option value="B" selected>Promo B (중간)</option>
+            <option value="C">Promo C (공격)</option>
+            <option value="T">Tactical (최대 공격)</option>
+          </select>
+        </div>
+        <div id="p-promo-result"></div>
+        <table class="promo-matrix" id="p-promo-matrix">
+          <thead><tr><th>자사↓ 경쟁사→</th><th>A</th><th>B</th><th>C</th><th>Tactical</th></tr></thead>
+          <tbody id="p-promo-matrix-body"></tbody>
+        </table>
+        <div style="font-size:10px;color:#888;margin-top:4px">수요 보정에 프로모션 효과가 반영됩니다.</div>
+      </div>
+
+      <!-- 7. 외부환경 (방식B: 기온, 유가) -->
+      <div class="param-section">
+        <div class="param-section-title">7️⃣ 외부환경 — 방식 B (수집 데이터)</div>
+        <div style="font-size:11px;font-weight:600;color:#0f3460;margin-bottom:4px">🌡️ 월별 평균 기온 (°C)</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:8px" id="p-env-temp-grid"></div>
+        <div style="font-size:11px;font-weight:600;color:#0f3460;margin-bottom:4px">🛢️ 유가 수준</div>
+        <div class="param-row">
+          <label>유가 전망</label>
+          <select id="p-env-oil" onchange="updateParamSummary()">
+            <option value="low">저유가 ($50-60)</option>
+            <option value="mid" selected>중간 ($70-80)</option>
+            <option value="high">고유가 ($90-100)</option>
+            <option value="vhigh">초고유가 ($100+)</option>
+          </select>
+        </div>
+        <div id="p-env-impact" style="margin-top:4px"></div>
+        <div style="font-size:10px;color:#888;margin-top:4px">기온→AC수요 보정, 유가→소비심리 반영.</div>
+      </div>
+
+      <!-- 8. 채널 믹스 시프트 -->
+      <div class="param-section">
+        <div class="param-section-title">8️⃣ 채널 믹스 시프트 (OR/IR 비중)</div>
+        <div class="param-row">
+          <label>OR 비중</label>
+          <input type="range" id="p-ch-or" min="20" max="80" value="50" oninput="document.getElementById('p-ch-or-lbl').textContent=this.value+'%';document.getElementById('p-ch-ir-lbl').textContent=(100-this.value)+'%';updateParamSummary()">
+          <span style="font-size:11px;font-weight:600;min-width:35px" id="p-ch-or-lbl">50%</span>
+        </div>
+        <div class="param-row">
+          <label>IR 비중</label>
+          <span style="font-size:12px;font-weight:700;color:#0f3460" id="p-ch-ir-lbl">50%</span>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:#555;margin:6px 0 3px">OR 채널 (5개)</div>
+        <div id="p-ch-or-detail"></div>
+        <div style="font-size:11px;font-weight:600;color:#555;margin:6px 0 3px">IR 채널 (8개)</div>
+        <div id="p-ch-ir-detail"></div>
+        <div style="font-size:10px;color:#888;margin-top:4px">채널별 분배 시 비중에 반영됩니다.</div>
+      </div>
+
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+      <button class="btn btn-primary" onclick="applyParams()">✅ 파라미터 적용</button>
+      <button class="btn btn-warn" onclick="resetParams()">🔄 기본값 초기화</button>
+      <span id="param-status" style="font-size:11px;color:#27ae60;font-weight:600"></span>
+    </div>
+  </div>
 </div>
 
 <!-- TAB 1: 모델별 믹스 분배 (기존 + 계절성 강화) -->
@@ -1397,7 +1581,540 @@ function downloadCSV(csv, filename) {
   a.click();
 }
 
+// ─── OPTION PARAMETER PANEL ──────────────────────────────────────────────
+
+// Default Saudi Arabia monthly avg temperatures (Riyadh area)
+const DEFAULT_TEMPS = {Apr:32,May:38,Jun:42,Jul:44,Aug:44,Sep:40,Oct:34,Nov:26,Dec:20};
+// Baseline temps (historical avg) for computing delta
+const BASELINE_TEMPS = {Apr:32,May:38,Jun:42,Jul:44,Aug:44,Sep:40,Oct:34,Nov:26,Dec:20};
+
+// Promo impact matrix: [own][comp] → demand multiplier
+const PROMO_MATRIX = {
+  A: { A: 1.00, B: 0.95, C: 0.90, T: 0.85 },
+  B: { A: 1.05, B: 1.00, C: 0.95, T: 0.90 },
+  C: { A: 1.10, B: 1.05, C: 1.00, T: 0.95 },
+  T: { A: 1.20, B: 1.15, C: 1.10, T: 1.05 }
+};
+const PROMO_LABELS = {A:'Promo A',B:'Promo B',C:'Promo C',T:'Tactical'};
+
+// Oil price impact on consumer sentiment
+const OIL_IMPACT = { low: 1.05, mid: 1.00, high: 0.97, vhigh: 0.93 };
+
+// Current applied parameters (global state)
+let appliedParams = null;
+
+function applySupplyPreset(mode) {
+  const presets = {
+    even: [100, 100, 100],
+    front: [120, 110, 70],
+    back: [80, 90, 130],
+    custom: null
+  };
+  const vals = presets[mode];
+  if (!vals) return;
+  ['q2','q3','q4'].forEach((q, i) => {
+    const el = document.getElementById('p-supply-' + q);
+    if (el) { el.value = vals[i]; el.nextElementSibling.textContent = vals[i] + '%'; }
+  });
+}
+
+function toggleParamPanel(el) {
+  el.classList.toggle('open');
+  document.getElementById('param-body').classList.toggle('open');
+}
+
+function initParamPanel() {
+  // Demand per-category inputs
+  let dHtml = '';
+  CATEGORIES.forEach(cat => {
+    dHtml += `<div class="param-row">
+      <label style="min-width:110px;font-size:10px">${cat}</label>
+      <input type="number" id="p-demand-${cat.replace(/\s+/g,'_')}" value="0" min="-50" max="50" style="width:55px" onchange="updateParamSummary()">
+      <span style="font-size:10px;color:#888">%p</span>
+    </div>`;
+  });
+  document.getElementById('p-demand-cats').innerHTML = dHtml;
+
+  // Model mix per-category weights
+  let mHtml = '';
+  CATEGORIES.forEach(cat => {
+    mHtml += `<div class="param-row">
+      <label style="min-width:110px;font-size:10px">${cat}</label>
+      <input type="range" id="p-mix-${cat.replace(/\s+/g,'_')}" min="50" max="150" value="100"
+        oninput="this.nextElementSibling.textContent=this.value+'%';updateParamSummary()">
+      <span style="font-size:11px;font-weight:600;min-width:35px">100%</span>
+    </div>`;
+  });
+  document.getElementById('p-modelmix-cats').innerHTML = mHtml;
+
+  // Temperature inputs
+  let tHtml = '';
+  FUTURE_MONTHS.forEach(m => {
+    tHtml += `<div style="display:flex;align-items:center;gap:3px">
+      <span style="font-size:10px;min-width:28px;color:#555">${m}</span>
+      <input type="number" id="p-temp-${m}" value="${DEFAULT_TEMPS[m]}" min="0" max="55" class="env-mini-input" onchange="updateParamSummary()">
+      <span style="font-size:9px;color:#888">°C</span>
+    </div>`;
+  });
+  document.getElementById('p-env-temp-grid').innerHTML = tHtml;
+
+  // Channel OR/IR detail inputs
+  const OR_CH = ['eXtra','Al Manea','SWS','Black Box','Al Khunizan'];
+  const IR_CH = ['BH','BM','Tamkeen','Zagzoog','Dhamin','Star Appliance','Al Ghanem','Al Shathri'];
+
+  let orHtml = '';
+  OR_CH.forEach(ch => {
+    const defPct = Math.round(100 / OR_CH.length);
+    orHtml += `<div class="param-row" style="margin-bottom:3px">
+      <label style="min-width:80px;font-size:10px">${ch}</label>
+      <input type="number" id="p-ch-${ch.replace(/\s+/g,'_')}" value="${defPct}" min="0" max="100" class="env-mini-input" onchange="updateParamSummary()">
+      <span style="font-size:9px;color:#888">%</span>
+    </div>`;
+  });
+  document.getElementById('p-ch-or-detail').innerHTML = orHtml;
+
+  let irHtml = '';
+  IR_CH.forEach(ch => {
+    const defPct = Math.round(100 / IR_CH.length);
+    irHtml += `<div class="param-row" style="margin-bottom:3px">
+      <label style="min-width:80px;font-size:10px">${ch}</label>
+      <input type="number" id="p-ch-${ch.replace(/\s+/g,'_')}" value="${defPct}" min="0" max="100" class="env-mini-input" onchange="updateParamSummary()">
+      <span style="font-size:9px;color:#888">%</span>
+    </div>`;
+  });
+  document.getElementById('p-ch-ir-detail').innerHTML = irHtml;
+
+  updatePromoMatrix();
+  updateParamSummary();
+}
+
+function applyDemandAll(val) {
+  document.getElementById('p-demand-all-lbl').textContent = (val >= 0 ? '+' : '') + val + '%p';
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById('p-demand-' + cat.replace(/\s+/g, '_'));
+    if (el) el.value = val;
+  });
+  updateParamSummary();
+}
+
+function updatePromoMatrix() {
+  const own = document.getElementById('p-promo-own').value;
+  const comp = document.getElementById('p-promo-comp').value;
+  const effect = PROMO_MATRIX[own][comp];
+  const effectPct = ((effect - 1) * 100).toFixed(0);
+
+  let cls = 'neutral', label = '동등';
+  if (effect > 1.02) { cls = 'boost'; label = '우세 (수요 +' + effectPct + '%)'; }
+  else if (effect < 0.98) { cls = 'dampen'; label = '열세 (수요 ' + effectPct + '%)'; }
+  document.getElementById('p-promo-result').innerHTML =
+    `<div class="param-impact ${cls}" style="margin:6px 0">📊 ${PROMO_LABELS[own]} vs ${PROMO_LABELS[comp]}: <strong>${label}</strong></div>`;
+
+  // Build matrix
+  const grades = ['A','B','C','T'];
+  let mHtml = '';
+  grades.forEach(o => {
+    mHtml += `<tr><th>${PROMO_LABELS[o]}</th>`;
+    grades.forEach(c => {
+      const v = PROMO_MATRIX[o][c];
+      const pct = ((v-1)*100).toFixed(0);
+      const selected = (o === own && c === comp);
+      let tdCls = v > 1.02 ? 'promo-win' : v < 0.98 ? 'promo-lose' : 'promo-draw';
+      let style = selected ? 'border:2px solid #0f3460;font-size:12px;' : '';
+      mHtml += `<td class="${tdCls}" style="${style}">${pct >= 0 ? '+' : ''}${pct}%</td>`;
+    });
+    mHtml += '</tr>';
+  });
+  document.getElementById('p-promo-matrix-body').innerHTML = mHtml;
+}
+
+function getParamValues() {
+  // 1. Supply strategy
+  const supplyMode = document.getElementById('p-supply-mode').value;
+  const supplyQ2 = parseInt(document.getElementById('p-supply-q2').value) / 100;
+  const supplyQ3 = parseInt(document.getElementById('p-supply-q3').value) / 100;
+  const supplyQ4 = parseInt(document.getElementById('p-supply-q4').value) / 100;
+  const supplyByMonth = {};
+  FUTURE_MONTHS.forEach(m => {
+    if (['Apr','May','Jun'].includes(m)) supplyByMonth[m] = supplyQ2;
+    else if (['Jul','Aug','Sep'].includes(m)) supplyByMonth[m] = supplyQ3;
+    else supplyByMonth[m] = supplyQ4;
+  });
+
+  // 2. Demand adjustments
+  const demandAdj = {};
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById('p-demand-' + cat.replace(/\s+/g, '_'));
+    demandAdj[cat] = (parseInt(el?.value) || 0) / 100; // e.g., 0.10 for +10%p
+  });
+
+  // 3. Inventory standards
+  const wosIR = parseInt(document.getElementById('p-wos-ir').value) || 24;
+  const wosOR = parseInt(document.getElementById('p-wos-or').value) || 8;
+  const wosIRShort = parseInt(document.getElementById('p-wos-ir-short').value) || 12;
+  const wosORShort = parseInt(document.getElementById('p-wos-or-short').value) || 6;
+
+  // 4. Model mix weights
+  const mixWeights = {};
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById('p-mix-' + cat.replace(/\s+/g, '_'));
+    mixWeights[cat] = (parseInt(el?.value) || 100) / 100;
+  });
+
+  // 6. Promo effect
+  const promoOwn = document.getElementById('p-promo-own').value;
+  const promoComp = document.getElementById('p-promo-comp').value;
+  const promoEffect = PROMO_MATRIX[promoOwn][promoComp];
+
+  // 7. External environment
+  const tempByMonth = {};
+  const tempImpact = {};
+  FUTURE_MONTHS.forEach(m => {
+    const temp = parseInt(document.getElementById('p-temp-' + m)?.value) || BASELINE_TEMPS[m];
+    tempByMonth[m] = temp;
+    const delta = temp - BASELINE_TEMPS[m];
+    // +1°C above baseline → +2% AC demand (hotter = more AC sales)
+    tempImpact[m] = 1 + (delta * 0.02);
+  });
+  const oilLevel = document.getElementById('p-env-oil').value;
+  const oilEffect = OIL_IMPACT[oilLevel];
+
+  // 8. Channel mix shift
+  const orPct = parseInt(document.getElementById('p-ch-or').value) / 100;
+  const irPct = 1 - orPct;
+  const chWeights = {};
+  CHANNELS.forEach(ch => {
+    const el = document.getElementById('p-ch-' + ch.replace(/\s+/g, '_'));
+    chWeights[ch] = parseInt(el?.value) || 0;
+  });
+
+  return {
+    supply: { mode: supplyMode, byMonth: supplyByMonth },
+    demand: { adj: demandAdj },
+    inventory: { wosIR, wosOR, wosIRShort, wosORShort },
+    modelMix: { weights: mixWeights },
+    promo: { own: promoOwn, comp: promoComp, effect: promoEffect },
+    env: { temps: tempByMonth, tempImpact, oilLevel, oilEffect },
+    channel: { orPct, irPct, weights: chWeights }
+  };
+}
+
+// Combined demand multiplier for a month
+function getDemandMultiplier(cat, month) {
+  if (!appliedParams) return 1.0;
+  const p = appliedParams;
+  let mult = 1.0;
+  // Demand adjustment
+  mult += (p.demand.adj[cat] || 0);
+  // Promo effect
+  mult *= p.promo.effect;
+  // Temperature effect
+  mult *= (p.env.tempImpact[month] || 1.0);
+  // Oil price effect
+  mult *= p.env.oilEffect;
+  return Math.max(0.1, mult);
+}
+
+// Supply multiplier for a month
+function getSupplyMultiplier(month) {
+  if (!appliedParams) return 1.0;
+  return appliedParams.supply.byMonth[month] || 1.0;
+}
+
+// Get target WOS for a channel
+function getTargetWOS(ch) {
+  if (!appliedParams) {
+    const s = CHANNEL_STOCK[ch];
+    return s ? s.wos_healthy : 12;
+  }
+  const s = CHANNEL_STOCK[ch];
+  if (!s) return 12;
+  return s.group === 'IR' ? appliedParams.inventory.wosIR : appliedParams.inventory.wosOR;
+}
+
+function applyParams() {
+  appliedParams = getParamValues();
+  document.getElementById('param-status').textContent = '✅ 적용됨 (' + new Date().toLocaleTimeString() + ')';
+
+  // Update WOS target inputs in supply tab
+  CHANNELS.forEach(ch => {
+    const el = document.getElementById('sup-wos-' + ch);
+    if (el) el.value = getTargetWOS(ch);
+  });
+
+  updateParamSummary();
+  updateEnvImpact();
+  alert('✅ 옵션 파라미터가 적용되었습니다!\n시뮬레이션을 다시 실행하면 새 파라미터가 반영됩니다.');
+}
+
+function resetParams() {
+  // Reset supply
+  document.getElementById('p-supply-mode').value = 'front';
+  document.getElementById('p-supply-q2').value = 120;
+  document.getElementById('p-supply-q3').value = 110;
+  document.getElementById('p-supply-q4').value = 70;
+  document.querySelectorAll('#p-supply-q2+span, #p-supply-q3+span, #p-supply-q4+span').forEach((s,i) => {
+    s.textContent = [120,110,70][i] + '%';
+  });
+  // Reset demand
+  document.getElementById('p-demand-all').value = 0;
+  document.getElementById('p-demand-all-lbl').textContent = '±0%p';
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById('p-demand-' + cat.replace(/\s+/g, '_'));
+    if (el) el.value = 0;
+  });
+  // Reset inventory
+  document.getElementById('p-wos-ir').value = 24;
+  document.getElementById('p-wos-or').value = 8;
+  document.getElementById('p-wos-ir-short').value = 12;
+  document.getElementById('p-wos-or-short').value = 6;
+  // Reset model mix
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById('p-mix-' + cat.replace(/\s+/g, '_'));
+    if (el) { el.value = 100; el.nextElementSibling.textContent = '100%'; }
+  });
+  // Reset promo
+  document.getElementById('p-promo-own').value = 'A';
+  document.getElementById('p-promo-comp').value = 'B';
+  updatePromoMatrix();
+  // Reset temps
+  FUTURE_MONTHS.forEach(m => {
+    const el = document.getElementById('p-temp-' + m);
+    if (el) el.value = DEFAULT_TEMPS[m];
+  });
+  // Reset oil
+  document.getElementById('p-env-oil').value = 'mid';
+  // Reset channel
+  document.getElementById('p-ch-or').value = 50;
+  document.getElementById('p-ch-or-lbl').textContent = '50%';
+  document.getElementById('p-ch-ir-lbl').textContent = '50%';
+
+  appliedParams = null;
+  document.getElementById('param-status').textContent = '🔄 초기화됨';
+  document.getElementById('param-summary').textContent = '(��본값)';
+  updateEnvImpact();
+}
+
+function updateParamSummary() {
+  const parts = [];
+  // Supply
+  const sm = document.getElementById('p-supply-mode').value;
+  if (sm !== 'even') parts.push(sm === 'front' ? '전반기집중' : sm === 'back' ? '후반기집중' : '사용자지정');
+  // Demand
+  const anyDemand = CATEGORIES.some(cat => {
+    const el = document.getElementById('p-demand-' + cat.replace(/\s+/g, '_'));
+    return el && parseInt(el.value) !== 0;
+  });
+  if (anyDemand) parts.push('수요조정');
+  // Promo
+  const po = document.getElementById('p-promo-own').value;
+  const pc = document.getElementById('p-promo-comp').value;
+  if (po !== 'A' || pc !== 'A') parts.push('프로모 ' + po + 'vs' + pc);
+  // Oil
+  const oil = document.getElementById('p-env-oil').value;
+  if (oil !== 'mid') parts.push('유가:' + {low:'저',mid:'중',high:'고',vhigh:'초고'}[oil]);
+
+  document.getElementById('param-summary').textContent =
+    parts.length > 0 ? '(' + parts.join(' · ') + ')' : '(기본값)';
+}
+
+function updateEnvImpact() {
+  const oilLevel = document.getElementById('p-env-oil').value;
+  const oilEff = OIL_IMPACT[oilLevel];
+  const oilPct = ((oilEff - 1) * 100).toFixed(0);
+  let html = `<div class="param-impact ${oilEff >= 1 ? 'boost' : 'dampen'}">🛢️ 유가 효과: 수요 ${oilPct >= 0 ? '+' : ''}${oilPct}%</div>`;
+
+  // Show temp deltas
+  let tempChanges = [];
+  FUTURE_MONTHS.forEach(m => {
+    const temp = parseInt(document.getElementById('p-temp-' + m)?.value) || BASELINE_TEMPS[m];
+    const delta = temp - BASELINE_TEMPS[m];
+    if (delta !== 0) tempChanges.push(`${m}:${delta > 0 ? '+' : ''}${delta}°C`);
+  });
+  if (tempChanges.length > 0) {
+    html += `<div style="font-size:10px;color:#555;margin-top:3px">🌡️ 기온 변화: ${tempChanges.join(', ')} → 수요 보정</div>`;
+  }
+  document.getElementById('p-env-impact').innerHTML = html;
+}
+
+// ─── Modified: Apply parameters to supply simulation ─────────────────────
+const _origRunSupplySimulation = runSupplySimulation;
+runSupplySimulation = function() {
+  if (!appliedParams) { _origRunSupplySimulation(); return; }
+
+  // Enhanced simulation with parameters
+  let html = '';
+
+  // Show active params banner
+  html += `<div class="info-box" style="margin-bottom:12px">
+    <strong>⚙️ 적용된 파라미터:</strong>
+    공급전략=${appliedParams.supply.mode}
+    | 프로모 효과=${((appliedParams.promo.effect-1)*100).toFixed(0)}%
+    | 유가=${appliedParams.env.oilLevel}(${((appliedParams.env.oilEffect-1)*100).toFixed(0)}%)
+    | IR WOS목표=${appliedParams.inventory.wosIR}W | OR WOS목표=${appliedParams.inventory.wosOR}W
+  </div>`;
+
+  // TABLE 1: Sell-In
+  html += `<div class="card" style="margin-top:12px"><div class="card-title">📦 월별 필요 발주량 (Sell-In) — 옵션 파라미터 반영</div>
+    <div class="info-box">공식: <code>필요입고 = max(0, 목표재고 - (전월재고 - Sell-Out))</code> × 공급전략 배율<br>
+    수요 보정: 프로모션(${((appliedParams.promo.effect-1)*100).toFixed(0)}%) + 유가(${((appliedParams.env.oilEffect-1)*100).toFixed(0)}%) + 기온 보정</div>
+    <div class="tbl-wrap"><table>
+    <thead><tr><th>Channel</th><th>현재고</th><th>목표WOS</th>`;
+  FUTURE_MONTHS.forEach(m => html += `<th>${m}<br><small>발주(Sell-In)</small></th>`);
+  html += `<th>총 발주</th><th>상태</th></tr></thead><tbody>`;
+
+  const simData = {};
+  let totalOrders = {}; FUTURE_MONTHS.forEach(m => totalOrders[m] = 0);
+
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const targetWOS = parseInt(document.getElementById(`sup-wos-${ch}`)?.value) || getTargetWOS(ch);
+    let stock = s.stock;
+    let totalOrder = 0;
+    simData[ch] = { months: {}, targetWOS };
+
+    html += `<tr><td>${ch}</td><td class="num">${fmt(s.stock)}</td><td class="num">${targetWOS}W</td>`;
+    FUTURE_MONTHS.forEach(m => {
+      let sellOut = parseInt(document.getElementById(`sup-sell-${ch}-${m}`)?.value) || 0;
+      // Apply demand multiplier (avg across categories)
+      const avgDemandMult = CATEGORIES.reduce((s, cat) => s + getDemandMultiplier(cat, m), 0) / CATEGORIES.length;
+      sellOut = Math.round(sellOut * avgDemandMult);
+
+      const afterSale = Math.max(0, stock - sellOut);
+      const targetStock = Math.round(targetWOS * sellOut / 4.33);
+      let sellIn = Math.max(0, targetStock - afterSale);
+      // Apply supply strategy multiplier
+      sellIn = Math.round(sellIn * getSupplyMultiplier(m));
+
+      stock = afterSale + sellIn;
+      const wos = sellOut > 0 ? (stock / (sellOut / 4.33)) : (stock > 0 ? 999 : 0);
+      totalOrder += sellIn;
+      totalOrders[m] += sellIn;
+      simData[ch].months[m] = { sellOut, sellIn, endStock: stock, wos: Math.min(wos, 999) };
+
+      const bg = sellIn > 0 ? (sellIn > sellOut ? '#ffebee' : '#fff9e6') : '#e8f5e9';
+      html += `<td class="num" style="background:${bg};font-weight:600">${sellIn > 0 ? fmt(sellIn) : '—'}</td>`;
+    });
+    const status = totalOrder === 0 ? '<span class="trend up">충분</span>' :
+                   totalOrder > s.stock ? '<span class="trend dn">대량 발주 필요</span>' :
+                   '<span class="trend flat">소량 발주</span>';
+    html += `<td class="num" style="font-weight:700">${fmt(totalOrder)}</td><td>${status}</td></tr>`;
+  });
+
+  const grandTotal = Object.values(totalOrders).reduce((a,b)=>a+b,0);
+  html += '<tr style="font-weight:700;background:#f0f4ff"><td colspan="3">합계</td>';
+  FUTURE_MONTHS.forEach(m => html += `<td class="num">${fmt(totalOrders[m])}</td>`);
+  html += `<td class="num" style="font-size:14px">${fmt(grandTotal)}</td><td></td></tr>`;
+  html += '</tbody></table></div></div>';
+
+  // TABLE 2: End-of-month stock
+  html += `<div class="card"><div class="card-title">📋 월말 예상 재고량</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Channel</th><th>현재고</th>`;
+  FUTURE_MONTHS.forEach(m => html += `<th>${m}</th>`);
+  html += `</tr></thead><tbody>`;
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const d = simData[ch]; if (!d) return;
+    html += `<tr><td>${ch}</td><td class="num" style="font-weight:600">${fmt(s.stock)}</td>`;
+    FUTURE_MONTHS.forEach(m => {
+      const md = d.months[m]; if (!md) { html += '<td>—</td>'; return; }
+      const bg = md.endStock < 100 ? '#ffebee' : md.endStock > s.stock * 1.5 ? '#e3f2fd' : '';
+      html += `<td class="num" style="font-weight:600;${bg?'background:'+bg:''}">${fmt(md.endStock)}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  // TABLE 3: WOS + signals
+  html += `<div class="card"><div class="card-title">🚦 월말 WOS 추이 + 신호등</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Channel</th><th>현재WOS</th>`;
+  FUTURE_MONTHS.forEach(m => html += `<th>${m}</th>`);
+  html += `<th>목표</th></tr></thead><tbody>`;
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const d = simData[ch]; if (!d) return;
+    const opp = s.group === 'IR' ? appliedParams.inventory.wosIRShort : appliedParams.inventory.wosORShort;
+    const healthy = getTargetWOS(ch);
+    const curSig = getWOSSignal(s.wos, opp, healthy);
+    html += `<tr><td>${ch}</td><td class="num"><span class="signal ${curSig.cls}"></span><span style="color:${curSig.color};font-weight:600">${s.wos}W</span></td>`;
+    FUTURE_MONTHS.forEach(m => {
+      const md = d.months[m]; if (!md) { html += '<td>—</td>'; return; }
+      const sig = getWOSSignal(md.wos, opp, healthy);
+      const wosDisplay = md.wos >= 999 ? '∞' : md.wos.toFixed(1);
+      html += `<td class="num" style="font-weight:600"><span class="signal ${sig.cls}"></span><span style="color:${sig.color}">${wosDisplay}W</span></td>`;
+    });
+    html += `<td class="num" style="background:#e8f5e9;font-weight:700">${d.targetWOS}W</td></tr>`;
+  });
+  html += '</tbody></table></div></div>';
+
+  // Summary
+  html += `<div class="card"><div class="card-title">📊 시뮬레이션 요약 (파라미터 적용)</div><div class="stat-grid">`;
+  let totalSellIn = 0, totalSellOut = 0;
+  const chSummary = [];
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const d = simData[ch]; if (!d) return;
+    let chSellIn = 0, chSellOut = 0;
+    FUTURE_MONTHS.forEach(m => {
+      const md = d.months[m]; if (!md) return;
+      chSellIn += md.sellIn; chSellOut += md.sellOut;
+    });
+    totalSellIn += chSellIn; totalSellOut += chSellOut;
+    const lastMonth = d.months[FUTURE_MONTHS[FUTURE_MONTHS.length-1]];
+    chSummary.push({ ch, sellIn: chSellIn, sellOut: chSellOut, endStock: lastMonth?.endStock || 0, endWOS: lastMonth?.wos || 0 });
+  });
+
+  html += `<div class="stat-box" style="border:2px solid #0f3460">
+    <div class="val" style="font-size:16px">${fmt(totalSellIn)}</div>
+    <div class="lbl">총 필요 발주량 (Apr~Dec)</div>
+  </div>
+  <div class="stat-box">
+    <div class="val" style="font-size:16px;color:#e74c3c">${fmt(totalSellOut)}</div>
+    <div class="lbl">총 예상 판매량 (Apr~Dec)</div>
+  </div>
+  <div class="stat-box">
+    <div class="val" style="font-size:16px;color:#27ae60">${chSummary.filter(c => {
+      const s = CHANNEL_STOCK[c.ch];
+      const opp = s.group === 'IR' ? appliedParams.inventory.wosIRShort : appliedParams.inventory.wosORShort;
+      const healthy = getTargetWOS(c.ch);
+      const sig = getWOSSignal(c.endWOS, opp, healthy);
+      return sig.label === 'HEALTHY';
+    }).length} / ${chSummary.length}</div>
+    <div class="lbl">Dec 말 적정 재고 채널 수</div>
+  </div></div></div>`;
+
+  document.getElementById('supply-result').innerHTML = html;
+};
+
+// Also modify autoFillSellOut to use demand params
+const _origAutoFillSellOut = autoFillSellOut;
+autoFillSellOut = function() {
+  const seasonIdx = getSeasonalityIndex();
+  CHANNELS.forEach(ch => {
+    const s = CHANNEL_STOCK[ch]; if (!s) return;
+    const weeklyRate = s.wos > 0 ? s.stock / s.wos : 0;
+    const baseMonthly = Math.round(weeklyRate * 4.33);
+    FUTURE_MONTHS.forEach(m => {
+      let seasonAvg = 0, cnt = 0;
+      CATEGORIES.forEach(cat => {
+        const idx = seasonIdx[cat]?.[m];
+        if (idx && idx > 0) { seasonAvg += idx; cnt++; }
+      });
+      seasonAvg = cnt > 0 ? seasonAvg / cnt : 1.0;
+      let adjusted = Math.round(baseMonthly * seasonAvg);
+      // Apply demand parameters if active
+      if (appliedParams) {
+        const avgDemandMult = CATEGORIES.reduce((s, cat) => s + getDemandMultiplier(cat, m), 0) / CATEGORIES.length;
+        adjusted = Math.round(adjusted * avgDemandMult);
+      }
+      const el = document.getElementById(`sup-sell-${ch}-${m}`);
+      if (el && !el.value) el.value = adjusted > 0 ? adjusted : '';
+    });
+  });
+  alert('✅ Sell-Out 자동 채우기 완료!' + (appliedParams ? '\n(옵션 파라미터 반영: 프로모/기온/유가)' : '\n현재 재고/WOS 기반 + 계절성 지수 반영'));
+};
+
 // ─── Init ─────────────────────────────────────────────────────────────────
+initParamPanel();
 buildSeasonChart();
 buildAnnualTargetInputs();
 buildMixInputs();
