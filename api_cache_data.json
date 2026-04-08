@@ -1,0 +1,47 @@
+{
+  "updated_at": "2026-04-08 20:27:54",
+  "updated_by": "api_cache_weather_oil.py",
+  "temperature": {
+    "monthly_avg": {
+      "Jan": 14.9,
+      "Feb": 17.1,
+      "Mar": 21.8,
+      "Apr": 25.8,
+      "May": 33.0,
+      "Jun": 36.6,
+      "Jul": 37.7,
+      "Aug": 37.7,
+      "Sep": 34.7,
+      "Oct": 28.8,
+      "Nov": 22.9,
+      "Dec": 17.6
+    },
+    "baseline": {
+      "Jan": 14.9,
+      "Feb": 17.1,
+      "Mar": 21.8,
+      "Apr": 26.8,
+      "May": 33.0,
+      "Jun": 36.6,
+      "Jul": 37.7,
+      "Aug": 37.7,
+      "Sep": 34.7,
+      "Oct": 28.8,
+      "Nov": 22.9,
+      "Dec": 17.6
+    },
+    "source": "Open-Meteo (forecast + 3yr historical)",
+    "location": "Riyadh, Saudi Arabia"
+  },
+  "oil": {
+    "wti_price": 94.91,
+    "wti_level": "high",
+    "recent_prices": [
+      111.54,
+      112.41,
+      112.95,
+      94.91
+    ],
+    "source": "Yahoo Finance (WTI CL=F)"
+  }
+}

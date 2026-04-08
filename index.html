@@ -257,12 +257,18 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
         <div style="font-size:10px;color:#888;margin-top:4px">월별로 자사/경쟁사 프로모션 전략을 다르게 설정할 수 있습니다.</div>
       </div>
 
-      <!-- 7. 외부환경 (방식B: 기온, 유가) -->
+      <!-- 7. 외부환경 (방식B: 기온, 유가) — API 캐싱 연동 -->
       <div class="param-section">
-        <div class="param-section-title">7️⃣ 외부환경 — 방식 B (수집 데이터)</div>
-        <div style="font-size:11px;font-weight:600;color:#0f3460;margin-bottom:4px">🌡️ 월별 평균 기온 (°C)</div>
+        <div class="param-section-title">7️⃣ 외부환경 — 방식 B (수집 데이터)
+          <span id="api-cache-status" style="font-size:9px;font-weight:400;margin-left:8px;color:#888"></span>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:#0f3460;margin-bottom:4px">🌡️ 월별 평균 기온 (°C)
+          <span id="temp-source" style="font-size:9px;font-weight:400;color:#888;margin-left:4px"></span>
+        </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:8px" id="p-env-temp-grid"></div>
-        <div style="font-size:11px;font-weight:600;color:#0f3460;margin-bottom:4px">🛢️ 유가 수준</div>
+        <div style="font-size:11px;font-weight:600;color:#0f3460;margin-bottom:4px">🛢️ 유가 수준
+          <span id="oil-source" style="font-size:9px;font-weight:400;color:#888;margin-left:4px"></span>
+        </div>
         <div class="param-row">
           <label>유가 전망</label>
           <select id="p-env-oil" onchange="updateParamSummary()">
@@ -272,8 +278,9 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
             <option value="vhigh">초고유가 ($100+)</option>
           </select>
         </div>
+        <div id="p-oil-realtime" style="font-size:10px;color:#0f3460;margin-top:2px;display:none"></div>
         <div id="p-env-impact" style="margin-top:4px"></div>
-        <div style="font-size:10px;color:#888;margin-top:4px">기온→AC수요 보정, 유가→소비심리 반영.</div>
+        <div style="font-size:10px;color:#888;margin-top:4px">기온→AC수요 보정, 유가→소비심리 반영. 매주 수요일 09:00 API 자동 갱신.</div>
       </div>
 
       <!-- 8. 채널 믹스 시프트 -->
@@ -1580,9 +1587,85 @@ function downloadCSV(csv, filename) {
 // ─── OPTION PARAMETER PANEL ──────────────────────────────────────────────
 
 // Default Saudi Arabia monthly avg temperatures (Riyadh area)
-const DEFAULT_TEMPS = {Apr:32,May:38,Jun:42,Jul:44,Aug:44,Sep:40,Oct:34,Nov:26,Dec:20};
+// These will be updated by API cache data if available
+let DEFAULT_TEMPS = {Apr:32,May:38,Jun:42,Jul:44,Aug:44,Sep:40,Oct:34,Nov:26,Dec:20};
 // Baseline temps (historical avg) for computing delta
-const BASELINE_TEMPS = {Apr:32,May:38,Jun:42,Jul:44,Aug:44,Sep:40,Oct:34,Nov:26,Dec:20};
+let BASELINE_TEMPS = {Apr:32,May:38,Jun:42,Jul:44,Aug:44,Sep:40,Oct:34,Nov:26,Dec:20};
+
+// API cache data (loaded on init)
+let apiCacheData = null;
+
+async function loadApiCache() {
+  try {
+    const resp = await fetch('api_cache_data.json?t=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    apiCacheData = await resp.json();
+
+    // Update temperatures
+    if (apiCacheData.temperature && apiCacheData.temperature.monthly_avg) {
+      const temps = apiCacheData.temperature.monthly_avg;
+      const MONTH_MAP = {Apr:'Apr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Aug',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dec'};
+      Object.keys(MONTH_MAP).forEach(m => {
+        if (temps[m] !== undefined) {
+          DEFAULT_TEMPS[m] = temps[m];
+        }
+      });
+      // Update baseline from historical
+      if (apiCacheData.temperature.baseline) {
+        const bl = apiCacheData.temperature.baseline;
+        Object.keys(MONTH_MAP).forEach(m => {
+          if (bl[m] !== undefined) BASELINE_TEMPS[m] = bl[m];
+        });
+      }
+      // Update input fields
+      Object.keys(MONTH_MAP).forEach(m => {
+        const el = document.getElementById('p-temp-' + m);
+        if (el) el.value = DEFAULT_TEMPS[m];
+      });
+    }
+
+    // Update oil level
+    if (apiCacheData.oil && apiCacheData.oil.wti_level) {
+      const oilSelect = document.getElementById('p-env-oil');
+      if (oilSelect) oilSelect.value = apiCacheData.oil.wti_level;
+    }
+
+    // Update UI labels
+    const statusEl = document.getElementById('api-cache-status');
+    if (statusEl && apiCacheData.updated_at) {
+      statusEl.textContent = '📡 ' + apiCacheData.updated_at + ' 갱신';
+      statusEl.style.color = '#27ae60';
+    }
+    const tempSrc = document.getElementById('temp-source');
+    if (tempSrc) tempSrc.textContent = '(Open-Meteo API)';
+    const oilSrc = document.getElementById('oil-source');
+    if (oilSrc && apiCacheData.oil) {
+      oilSrc.textContent = '(WTI $' + apiCacheData.oil.wti_price + ')';
+    }
+    const oilRt = document.getElementById('p-oil-realtime');
+    if (oilRt && apiCacheData.oil) {
+      const prices = apiCacheData.oil.recent_prices || [];
+      if (prices.length > 1) {
+        const trend = prices[prices.length-1] - prices[0];
+        const arrow = trend > 0 ? '📈' : trend < 0 ? '📉' : '➡️';
+        oilRt.style.display = 'block';
+        oilRt.innerHTML = `${arrow} WTI 최근 추이: $${prices.join(' → $')} <span style="color:${trend>0?'#e74c3c':'#27ae60'}">(${trend>0?'+':''}${trend.toFixed(1)})</span>`;
+      }
+    }
+
+    updateParamSummary();
+    console.log('[API Cache] Loaded:', apiCacheData.updated_at);
+    return true;
+  } catch (e) {
+    console.warn('[API Cache] Failed to load, using defaults:', e.message);
+    const statusEl = document.getElementById('api-cache-status');
+    if (statusEl) {
+      statusEl.textContent = '⚠️ 기본값 사용 중';
+      statusEl.style.color = '#e67e22';
+    }
+    return false;
+  }
+}
 
 // Promo impact matrix: [own][comp] → demand multiplier
 const PROMO_MATRIX = {
@@ -2237,11 +2320,13 @@ initParamPanel();
 buildSeasonChart();
 buildAnnualTargetInputs();
 buildMixInputs();
-// Auto-restore saved state on page load
-setTimeout(() => {
-  buildSupplyTab(); // Ensure supply inputs exist before restoring
-  loadSimState(false);
-}, 100);
+// Load API cache data, then restore saved state
+loadApiCache().then(() => {
+  setTimeout(() => {
+    buildSupplyTab(); // Ensure supply inputs exist before restoring
+    loadSimState(false);
+  }, 100);
+});
 </script>
 </body>
 </html>
