@@ -139,9 +139,17 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
 </head>
 <body>
 
-<div class="header">
-  <h1>📊 Sell Thru Simulator v4 — Supply & Inventory</h1>
-  <p>6탭 통합 구조 | 계절성 자동 반영 · 공급/재고 통합 시뮬 · 시나리오 비교 · 모델 드릴다운 · 백테스트</p>
+<div class="header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+  <div>
+    <h1>📊 Sell Thru Simulator v4 — Supply & Inventory</h1>
+    <p>6탭 통합 구조 | 계절성 자동 반영 · 공급/재고 통합 시뮬 · 시나리오 비교 · 모델 드릴다운 · 백테스트</p>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <button class="btn" style="background:#27ae60;color:white;font-size:12px;padding:6px 14px;" onclick="saveSimState()" title="현재 입력값을 브라우저에 저장">💾 저장</button>
+    <button class="btn" style="background:#3498db;color:white;font-size:12px;padding:6px 14px;" onclick="loadSimState(true)" title="저장된 입력값 불러오기">📂 불러오기</button>
+    <button class="btn" style="background:#e74c3c;color:white;font-size:12px;padding:6px 14px;" onclick="clearSimState()" title="저장된 데이터 삭제 및 초기화">🗑️ 저장 초기화</button>
+    <span id="save-status" style="font-size:11px;color:#a0b4cc;align-self:center;"></span>
+  </div>
 </div>
 
 <div class="tabs">
@@ -2136,11 +2144,104 @@ autoFillSellOut = function() {
   alert('✅ Sell-Out 자동 채우기 완료!' + (appliedParams ? '\n(옵션 파라미터 반영: 프로모/기온/유가)' : '\n현재 재고/WOS 기반 + 계절성 지수 반영'));
 };
 
+// ─── Save / Load State (localStorage) ────────────────────────────────────
+const SIM_STORAGE_KEY = 'sellthru_sim_v4_state';
+
+function collectAllInputs() {
+  const state = {};
+  // Collect all input/select values by ID
+  document.querySelectorAll('input[id], select[id]').forEach(el => {
+    if (el.type === 'checkbox') state[el.id] = el.checked;
+    else if (el.value !== '' && el.value !== undefined) state[el.id] = el.value;
+  });
+  // Save active tab
+  const activeTab = document.querySelector('.tab.active');
+  if (activeTab) {
+    const idx = [...document.querySelectorAll('.tab')].indexOf(activeTab);
+    if (idx >= 0 && TAB_IDS[idx]) state['__activeTab'] = TAB_IDS[idx];
+  }
+  // Save option parameters if applied
+  if (appliedParams) state['__appliedParams'] = JSON.stringify(appliedParams);
+  return state;
+}
+
+function saveSimState() {
+  // Ensure all tabs are built so we can collect inputs
+  buildSupplyTab();
+  buildAnnualTargetInputs();
+  buildMixInputs();
+  const state = collectAllInputs();
+  state['__savedAt'] = new Date().toLocaleString('ko-KR');
+  try {
+    localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(state));
+    const statusEl = document.getElementById('save-status');
+    statusEl.textContent = '✅ 저장 완료 (' + state['__savedAt'] + ')';
+    setTimeout(() => statusEl.textContent = '', 5000);
+    alert('✅ 저장 완료!\n다음에 이 페이지를 열면 자동으로 복원됩니다.\n\n저장 시각: ' + state['__savedAt']);
+  } catch(e) {
+    alert('❌ 저장 실패: ' + e.message);
+  }
+}
+
+function loadSimState(manual) {
+  try {
+    const raw = localStorage.getItem(SIM_STORAGE_KEY);
+    if (!raw) {
+      if (manual) alert('저장된 데이터가 없습니다.');
+      return false;
+    }
+    const state = JSON.parse(raw);
+    // Restore option params first
+    if (state['__appliedParams']) {
+      try { appliedParams = JSON.parse(state['__appliedParams']); } catch(e){}
+    }
+    // Restore all input/select values
+    let restored = 0;
+    Object.entries(state).forEach(([id, val]) => {
+      if (id.startsWith('__')) return;
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === 'checkbox') { el.checked = !!val; }
+      else { el.value = val; }
+      restored++;
+    });
+    // Restore active tab
+    if (state['__activeTab']) {
+      switchTab(state['__activeTab']);
+    }
+    // Update param panel display if params were restored
+    if (appliedParams) {
+      try { updateParamSummary(); } catch(e){}
+    }
+    const statusEl = document.getElementById('save-status');
+    if (state['__savedAt']) {
+      statusEl.textContent = '📂 마지막 저장: ' + state['__savedAt'];
+    }
+    if (manual) alert('✅ 불러오기 완료!\n복원된 입력값: ' + restored + '개\n저장 시각: ' + (state['__savedAt'] || '알 수 없음'));
+    return true;
+  } catch(e) {
+    if (manual) alert('❌ 불러오기 실패: ' + e.message);
+    return false;
+  }
+}
+
+function clearSimState() {
+  if (!confirm('저장된 시뮬레이션 데이터를 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+  localStorage.removeItem(SIM_STORAGE_KEY);
+  document.getElementById('save-status').textContent = '';
+  alert('🗑️ 저장 데이터가 삭제되었습니다.\n페이지를 새로고침하면 기본값으로 돌아갑니다.');
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────
 initParamPanel();
 buildSeasonChart();
 buildAnnualTargetInputs();
 buildMixInputs();
+// Auto-restore saved state on page load
+setTimeout(() => {
+  buildSupplyTab(); // Ensure supply inputs exist before restoring
+  loadSimState(false);
+}, 100);
 </script>
 </body>
 </html>
