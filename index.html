@@ -54,6 +54,11 @@ tr:hover td { background: #f8fafd; }
 .num { text-align: right; }
 .pct { text-align: right; color: #666; }
 .highlight { background: #fff9e6 !important; }
+tr.inspect-row td { background: #fff9e6 !important; }
+tr.inspect-row td:first-child { border-left: 3px solid #f39c12 !important; }
+.inspect-btn { cursor:pointer; font-size:13px; padding:1px 4px; border:none; background:transparent; opacity:0.4; transition:opacity .15s; }
+.inspect-btn:hover { opacity:1; }
+tr.inspect-row .inspect-btn { opacity:1; color:#f39c12; }
 .bar-cell { position: relative; }
 .bar { height: 14px; background: linear-gradient(90deg, #4fc3f7, #0f3460); border-radius: 2px; min-width: 2px; display: inline-block; }
 
@@ -97,11 +102,28 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
 <div class="tabs">
   <div class="tab active" onclick="switchTab('mix')">🔀 모델별 믹스 분배</div>
   <div class="tab" onclick="switchTab('sim')">📈 채널별 Sell Thru 시뮬</div>
+  <div class="tab" onclick="switchTab('annual')">📊 연간 뷰 (실적+시뮬)</div>
   <div class="tab" onclick="switchTab('trend')">📅 연도별 트렌드</div>
 </div>
 
 <!-- TAB 1: 모델별 믹스 분배 -->
 <div id="tab-mix" class="tab-content active">
+  <!-- 연간 목표 입력 카드 -->
+  <div class="card">
+    <div class="card-title">🎯 연간 목표 수량 입력 → 월별 자동 분배</div>
+    <div class="info-box">
+      <strong>사용법:</strong> 카테고리별 <strong>연간 총 목표 수량</strong>을 입력하세요.<br>
+      Jan~Mar 2026 실적을 차감한 잔여 물량(Apr~Dec)을 <strong>2025년 계절성 패턴</strong>을 기반으로 월별로 자동 분배합니다.<br>
+      분배 후 [STEP 1]의 월별 입력값에 자동으로 채워집니다. 원하시면 개별 수정 가능합니다.
+    </div>
+    <div id="annual-target-area"></div>
+    <div class="btn-group" style="margin-top:10px">
+      <button class="btn btn-success" onclick="applyAnnualTarget()">📅 연간→월별 분배 (2025 계절성 기반)</button>
+      <button class="btn btn-warn" onclick="clearAnnualTargets()">🗑️ 연간 목표 초기화</button>
+    </div>
+    <div id="annual-target-preview" style="display:none;margin-top:10px"></div>
+  </div>
+
   <div class="card">
     <div class="card-title">📥 STEP 1 — 월별 카테고리별 목표 수량 입력</div>
     <div class="info-box">
@@ -149,7 +171,37 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
   </div>
 </div>
 
-<!-- TAB 3: 연도별 트렌드 -->
+<!-- TAB 3: 연간 뷰 (실적 + 시뮬) -->
+<div id="tab-annual" class="tab-content">
+  <div class="card">
+    <div class="card-title">📊 2026 연간 카테고리별 Sell Out — 실적(Jan~Mar) + 시뮬 목표(Apr~Dec)</div>
+    <div class="info-box">
+      <strong>🟦 Jan~Mar</strong>: 2026 실제 판매 실적 &nbsp;|&nbsp;
+      <strong>🟩 Apr~Dec</strong>: 모델별 믹스 분배 탭에서 입력한 목표 수량 &nbsp;|&nbsp;
+      [새로고침] 버튼으로 시뮬 입력값 반영
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="buildAnnualTab()">🔄 새로고침 (시뮬 입력값 반영)</button>
+      <button class="btn btn-info" onclick="exportAnnualCSV()">📥 CSV 내보내기</button>
+    </div>
+    <div id="annual-table"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📈 2026 연간 카테고리별 합계 요약</div>
+    <div id="annual-summary"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📅 2024 / 2025 / 2026 연도별 실적 비교 (Sell Out)</div>
+    <div class="info-box">
+      <strong>2024 / 2025</strong>: IR 5채널 + OR 5채널 합산 실제 Sell Out &nbsp;|&nbsp;
+      <strong>2026</strong>: Jan~Mar 실적 + Apr~Dec 시뮬 목표 합산 &nbsp;|&nbsp;
+      Concealed Set / Cassette AC는 2024~2025 데이터 미포함
+    </div>
+    <div id="year-compare-table"></div>
+  </div>
+</div>
+
+<!-- TAB 4: 연도별 트렌드 -->
 <div id="tab-trend" class="tab-content">
   <div class="card">
     <div class="card-title">📅 연도별 카테고리별 셀아웃 트렌드 (YoY 성장률)</div>
@@ -163,7 +215,7 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
 </div>
 
 <script>
-const _DATA = {"model_mix": {"Split AC": [{"model": "ND182C", "btu": "18000", "comp": "Inverter", "type": "CO", "qty": 9753, "pct": 10.85}, {"model": "ND242C", "btu": "24000", "comp": "Inverter", "type": "CO", "qty": 9315, "pct": 10.36}, {"model": "LO182C", "btu": "18000", "comp": "Rotary", "type": "CO", "qty": 8578, "pct": 9.54}, {"model": "LO242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 5496, "pct": 6.12}, {"model": "NS182C", "btu": "18000", "comp": "Inverter", "type": "CO", "qty": 5425, "pct": 6.04}, {"model": "NW182C", "btu": "", "comp": "", "type": "", "qty": 4505, "pct": 5.01}, {"model": "NS242C", "btu": "24000", "comp": "Inverter", "type": "CO", "qty": 4350, "pct": 4.84}, {"model": "LB182C", "btu": "18000", "comp": "Rotary", "type": "CO", "qty": 3891, "pct": 4.33}, {"model": "LB242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 3698, "pct": 4.11}, {"model": "ND182H", "btu": "18000", "comp": "Inverter", "type": "HP", "qty": 3467, "pct": 3.86}, {"model": "ND242H", "btu": "24000", "comp": "Inverter", "type": "HP", "qty": 3421, "pct": 3.81}, {"model": "NT382C", "btu": "38000", "comp": "Inverter", "type": "CO", "qty": 2727, "pct": 3.03}, {"model": "LA182C", "btu": "18000", "comp": "Rotary", "type": "CO", "qty": 2581, "pct": 2.87}, {"model": "LA242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 2276, "pct": 2.53}, {"model": "NW182H", "btu": "", "comp": "", "type": "", "qty": 2084, "pct": 2.32}, {"model": "NS182H", "btu": "18000", "comp": "Inverter", "type": "HP", "qty": 2006, "pct": 2.23}, {"model": "NW242C", "btu": "", "comp": "", "type": "", "qty": 2005, "pct": 2.23}, {"model": "NF122C", "btu": "12000", "comp": "Inverter", "type": "CO", "qty": 1465, "pct": 1.63}, {"model": "LO182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 1377, "pct": 1.53}, {"model": "LO242H", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 1247, "pct": 1.39}, {"model": "NW242H", "btu": "", "comp": "", "type": "", "qty": 1154, "pct": 1.28}, {"model": "LA242H", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 1151, "pct": 1.28}, {"model": "AM242C", "btu": "24000", "comp": "Inverter", "type": "CO", "qty": 1150, "pct": 1.28}, {"model": "NS242H", "btu": "24000", "comp": "Inverter", "type": "HP", "qty": 1131, "pct": 1.26}, {"model": "NF122H", "btu": "", "comp": "", "type": "HP", "qty": 989, "pct": 1.1}, {"model": "NT382H", "btu": "38000", "comp": "Inverter", "type": "HP", "qty": 821, "pct": 0.91}, {"model": "AM182C", "btu": "18000", "comp": "Inverter", "type": "CO", "qty": 783, "pct": 0.87}, {"model": "LB182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 667, "pct": 0.74}, {"model": "LA182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 634, "pct": 0.71}, {"model": "LB242H", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 403, "pct": 0.45}, {"model": "LA302C", "btu": "30000", "comp": "Rotary", "type": "CO", "qty": 284, "pct": 0.32}, {"model": "LK242C", "btu": "23000", "comp": "Rotary", "type": "CO", "qty": 147, "pct": 0.16}, {"model": "LA302H", "btu": "30000", "comp": "Rotary", "type": "HP", "qty": 124, "pct": 0.14}, {"model": "NF182C", "btu": "18000", "comp": "Inverter", "type": "", "qty": 110, "pct": 0.12}, {"model": "LK182C", "btu": "18200", "comp": "Rotary", "type": "CO", "qty": 89, "pct": 0.1}, {"model": "NF242C", "btu": "24000", "comp": "Inverter", "type": "", "qty": 84, "pct": 0.09}, {"model": "NJ242C", "btu": "24000", "comp": "Rotary", "type": "", "qty": 69, "pct": 0.08}, {"model": "LK242H", "btu": "23000", "comp": "Rotary", "type": "HP", "qty": 63, "pct": 0.07}, {"model": "NF242H", "btu": "24000", "comp": "Inverter", "type": "HP", "qty": 40, "pct": 0.04}, {"model": "LK182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 39, "pct": 0.04}, {"model": "NG182C", "btu": "", "comp": "", "type": "", "qty": 35, "pct": 0.04}, {"model": "NF182H", "btu": "18000", "comp": "Inverter", "type": "", "qty": 30, "pct": 0.03}, {"model": "NV242C", "btu": "24000", "comp": "Inverter", "type": "", "qty": 29, "pct": 0.03}, {"model": "AF242C0N20", "btu": "", "comp": "", "type": "", "qty": 27, "pct": 0.03}, {"model": "AF242C", "btu": "", "comp": "", "type": "", "qty": 22, "pct": 0.02}, {"model": "AF182C", "btu": "", "comp": "", "type": "", "qty": 16, "pct": 0.02}, {"model": "NV242H", "btu": "24000", "comp": "Inverter", "type": "", "qty": 13, "pct": 0.01}, {"model": "NV182H", "btu": "18000", "comp": "Inverter", "type": "", "qty": 13, "pct": 0.01}, {"model": "AF182C0N20", "btu": "", "comp": "", "type": "", "qty": 13, "pct": 0.01}, {"model": "LH302C", "btu": "30000", "comp": "Rotary", "type": "CO", "qty": 11, "pct": 0.01}, {"model": "NV182C", "btu": "18000", "comp": "Inverter", "type": "", "qty": 10, "pct": 0.01}, {"model": "NJ182C", "btu": "18000", "comp": "Rotary", "type": "", "qty": 10, "pct": 0.01}, {"model": "LC242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 8, "pct": 0.01}, {"model": "NG182H", "btu": "", "comp": "", "type": "", "qty": 7, "pct": 0.01}, {"model": "LT302H", "btu": "30000", "comp": "Rotary", "type": "HP", "qty": 6, "pct": 0.01}, {"model": "LT302C", "btu": "28000", "comp": "Rotary", "type": "CO", "qty": 6, "pct": 0.01}, {"model": "LH242C", "btu": "24000", "comp": "Rotary", "type": "CO", "qty": 5, "pct": 0.01}, {"model": "LC242H", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 5, "pct": 0.01}, {"model": "NG242C", "btu": "", "comp": "", "type": "", "qty": 4, "pct": 0.0}, {"model": "LC182C", "btu": "18000", "comp": "Rotary", "type": "CO", "qty": 3, "pct": 0.0}, {"model": "NG242H", "btu": "", "comp": "", "type": "", "qty": 2, "pct": 0.0}, {"model": "LC182H", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 2, "pct": 0.0}, {"model": "NF12H", "btu": "12000", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 0.0}], "Floor Standing AC": [{"model": "APNQ55GT3M", "btu": "48000", "comp": "Inverter", "type": "CO", "qty": 5860, "pct": 62.03}, {"model": "APNQ55GT3MA", "btu": "48000", "comp": "Inverter", "type": "CO", "qty": 1864, "pct": 19.73}, {"model": "APUW55GT3M", "btu": "48000", "comp": "Inverter", "type": "CO", "qty": 856, "pct": 9.06}, {"model": "APNW55GT3M", "btu": "48000", "comp": "Inverter", "type": "HP", "qty": 480, "pct": 5.08}, {"model": "APNQ55GT3E6", "btu": "48000", "comp": "Inverter", "type": "CO", "qty": 265, "pct": 2.81}, {"model": "APNW55GT3MA", "btu": "46000", "comp": "Inverter", "type": "HP", "qty": 82, "pct": 0.87}, {"model": "APNW55GT3E6", "btu": "46000", "comp": "Inverter", "type": "HP", "qty": 22, "pct": 0.23}, {"model": "(excluded)", "btu": "48000", "comp": "Inverter", "type": "HP", "qty": 11, "pct": 0.12}, {"model": "APUW55GT3E6", "btu": "46000", "comp": "Inverter", "type": "CO", "qty": 7, "pct": 0.07}], "Window AC": [{"model": "C182EC", "btu": "18000", "comp": "Rotary", "type": "", "qty": 15812, "pct": 72.34}, {"model": "C182EH", "btu": "18000", "comp": "Rotary", "type": "", "qty": 3294, "pct": 15.07}, {"model": "C242EC", "btu": "24000", "comp": "Rotary", "type": "", "qty": 2614, "pct": 11.96}, {"model": "H182EC", "btu": "18000", "comp": "Rotary", "type": "", "qty": 105, "pct": 0.48}, {"model": "H182EH", "btu": "18000", "comp": "Rotary", "type": "HP", "qty": 20, "pct": 0.09}, {"model": "H242EH", "btu": "24000", "comp": "Rotary", "type": "HP", "qty": 8, "pct": 0.04}, {"model": "H242EC", "btu": "24000", "comp": "Rotary", "type": "", "qty": 4, "pct": 0.02}], "Concealed Set": [{"model": "ABUQ60GM3TA", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 92, "pct": 25.34}, {"model": "AUUQ60GT6", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 57, "pct": 15.7}, {"model": "AUUQ40GT6", "btu": "34000", "comp": "Inverter", "type": "CO", "qty": 30, "pct": 8.26}, {"model": "ABNQ60GM3TA", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 24, "pct": 6.61}, {"model": "ABNW21GM1", "btu": "18000", "comp": "Inverter", "type": "HP", "qty": 17, "pct": 4.68}, {"model": "ABNQ60GM3", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 16, "pct": 4.41}, {"model": "AUUW60GT6", "btu": "51000", "comp": "Inverter", "type": "HP", "qty": 15, "pct": 4.13}, {"model": "ABNQ55GM3", "btu": "47000", "comp": "Inverter", "type": "CO", "qty": 12, "pct": 3.31}, {"model": "ABUQ40GM3TA", "btu": "34000", "comp": "Inverter", "type": "CO", "qty": 10, "pct": 2.75}, {"model": "ABNW40GM3", "btu": "34000", "comp": "Inverter", "type": "HP", "qty": 10, "pct": 2.75}, {"model": "AUUQ34GT6-C", "btu": "26400", "comp": "Inverter", "type": "CO", "qty": 9, "pct": 2.48}, {"model": "ABNW60GM3", "btu": "52000", "comp": "Inverter", "type": "HP", "qty": 9, "pct": 2.48}, {"model": "AUUQ55GT6-C", "btu": "47000", "comp": "Inverter", "type": "CO", "qty": 8, "pct": 2.2}, {"model": "ABNQ40GM3", "btu": "34000", "comp": "Inverter", "type": "CO", "qty": 8, "pct": 2.2}, {"model": "AUUW40GT6-C", "btu": "32000", "comp": "Inverter", "type": "HP", "qty": 7, "pct": 1.93}, {"model": "AUUW55GT6-C", "btu": "47000", "comp": "Inverter", "type": "HP", "qty": 5, "pct": 1.38}, {"model": "ABNW34GM3", "btu": "26400", "comp": "Inverter", "type": "HP", "qty": 5, "pct": 1.38}, {"model": "ABNW28GM1", "btu": "22000", "comp": "Inverter", "type": "HP", "qty": 4, "pct": 1.1}, {"model": "ABNW55GM3", "btu": "47000", "comp": "Inverter", "type": "HP", "qty": 4, "pct": 1.1}, {"model": "ABUQ28GM1TA", "btu": "22000", "comp": "Inverter", "type": "CO", "qty": 3, "pct": 0.83}, {"model": "AUUQ21GT6-C", "btu": "16200", "comp": "Inverter", "type": "CO", "qty": 2, "pct": 0.55}, {"model": "AUUW28GT6-C", "btu": "22000", "comp": "Inverter", "type": "HP", "qty": 2, "pct": 0.55}, {"model": "ABUW60GM3", "btu": "52000", "comp": "Inverter", "type": "HP", "qty": 2, "pct": 0.55}, {"model": "ABNW40GM3TA", "btu": "34000", "comp": "Inverter", "type": "HP", "qty": 2, "pct": 0.55}, {"model": "ABNW60GM3TA", "btu": "51000", "comp": "Inverter", "type": "HP", "qty": 2, "pct": 0.55}, {"model": "ABUQ34GM3TA", "btu": "26400", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 0.28}, {"model": "ABUQ55GM3TA", "btu": "47000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 0.28}, {"model": "AUUW21GT6", "btu": "17000", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 0.28}, {"model": "ABUW34GM3", "btu": "26400", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 0.28}, {"model": "ABUW28GM1", "btu": "22000", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 0.28}, {"model": "ABN6536MT6", "btu": "", "comp": "Inverter", "type": "", "qty": 1, "pct": 0.28}, {"model": "ABNQ60LM3", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 0.28}, {"model": "ABNQ60LM3T6", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 0.28}], "Cassette AC": [{"model": "AM182C", "btu": "18000", "comp": "Inverter", "type": "CO", "qty": 7, "pct": 35.0}, {"model": "GTNW34GNL", "btu": "26400", "comp": "Inverter", "type": "HP", "qty": 5, "pct": 25.0}, {"model": "AUUQ60GT6", "btu": "52000", "comp": "Inverter", "type": "CO", "qty": 4, "pct": 20.0}, {"model": "ATUQ28GPL", "btu": "22000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 5.0}, {"model": "ATNW21GPL", "btu": "18000", "comp": "Inverter", "type": "HP", "qty": 1, "pct": 5.0}, {"model": "ATNQ34GNLT6", "btu": "26000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 5.0}, {"model": "AUUQ34GT6", "btu": "26000", "comp": "Inverter", "type": "CO", "qty": 1, "pct": 5.0}]}, "channel_mix": {"Split AC": {"eXtra": 39.41, "Al Manea": 20.9, "BH": 16.89, "SWS": 6.64, "Black Box": 5.45, "Tamkeen": 3.28, "BM": 1.98, "Dhamin": 1.83, "Al Khunizan": 1.33, "Star Appliance": 0.95, "Zagzoog": 0.59, "Al Shathri": 0.53, "Al Ghanem": 0.22}, "Floor Standing AC": {"BH": 53.94, "Al Manea": 8.9, "Tamkeen": 7.52, "Al Khunizan": 7.39, "Al Shathri": 5.35, "BM": 4.65, "eXtra": 4.31, "Star Appliance": 3.18, "SWS": 1.93, "Al Ghanem": 1.66, "Black Box": 0.64, "Dhamin": 0.55}, "Window AC": {"BH": 41.3, "Al Manea": 30.9, "eXtra": 26.08, "Black Box": 1.03, "BM": 0.57, "Dhamin": 0.11, "Tamkeen": 0.01}, "Concealed Set": {"BH": 59.5, "Star Appliance": 13.77, "Al Shathri": 11.02, "BM": 5.51, "SWS": 3.31, "Al Manea": 2.2, "Al Khunizan": 2.2, "Al Ghanem": 1.38, "Dhamin": 0.83, "Black Box": 0.28}, "Cassette AC": {"Al Shathri": 35.0, "Al Khunizan": 30.0, "BM": 25.0, "BH": 5.0, "Al Ghanem": 5.0}}, "channel_stock": {"BH": {"group": "IR", "stock": 7356, "wos": 52.3, "wos_opportunity": 12, "wos_healthy": 24}, "BM": {"group": "IR", "stock": 459, "wos": 14.1, "wos_opportunity": 12, "wos_healthy": 24}, "Tamkeen": {"group": "IR", "stock": 1456, "wos": 17.4, "wos_opportunity": 12, "wos_healthy": 24}, "Zagzoog": {"group": "IR", "stock": 808, "wos": 49.9, "wos_opportunity": 12, "wos_healthy": 24}, "Dhamin": {"group": "IR", "stock": 692, "wos": 21.2, "wos_opportunity": 12, "wos_healthy": 24}, "Star Appliance": {"group": "IR", "stock": 419, "wos": 19.7, "wos_opportunity": 12, "wos_healthy": 24}, "Al Ghanem": {"group": "IR", "stock": 351, "wos": 39.9, "wos_opportunity": 12, "wos_healthy": 24}, "Al Shathri": {"group": "IR", "stock": 331, "wos": 12.6, "wos_opportunity": 12, "wos_healthy": 24}, "eXtra": {"group": "OR", "stock": 9455, "wos": 17.2, "wos_opportunity": 6, "wos_healthy": 8}, "Al Manea": {"group": "OR", "stock": 2209, "wos": 18.5, "wos_opportunity": 6, "wos_healthy": 8}, "SWS": {"group": "OR", "stock": 365, "wos": 3.8, "wos_opportunity": 6, "wos_healthy": 8}, "Black Box": {"group": "OR", "stock": 536, "wos": 6.8, "wos_opportunity": 6, "wos_healthy": 8}, "Al Khunizan": {"group": "OR", "stock": 951, "wos": 41.6, "wos_opportunity": 6, "wos_healthy": 8}}, "yoy_growth": {"Split AC": {"Jan": 1.539, "Feb": 0.614, "Mar": 1.027, "Apr": 1.04, "May": 0.587, "Jun": 0.553, "Jul": 1.004, "Aug": 1.392, "Sep": 1.049, "Oct": 1.023, "Nov": 0.861, "Dec": 0.419}, "Floor Standing AC": {"Jan": 1.229, "Feb": 2.793, "Mar": 1.318, "Apr": 1.287, "May": 1.224, "Jun": 0.588, "Jul": 0.976, "Aug": 1.238, "Sep": 1.308, "Oct": 1.308, "Nov": 0.565, "Dec": 0.412}, "Window AC": {"Jan": 1.0, "Feb": 37.682, "Mar": 45.112, "Apr": 55.471, "May": 0.805, "Jun": 0.187, "Jul": 7.4, "Aug": 1.0, "Sep": 0.0, "Oct": 1.0, "Nov": 0.0, "Dec": 1.0}, "Concealed Set": {"Jan": 1.0, "Feb": 1.0, "Mar": 1.0, "Apr": 1.0, "May": 1.0, "Jun": 1.0, "Jul": 1.0, "Aug": 1.0, "Sep": 1.0, "Oct": 1.0, "Nov": 1.0, "Dec": 1.0}, "Cassette AC": {"Jan": 1.0, "Feb": 1.0, "Mar": 1.0, "Apr": 1.0, "May": 1.0, "Jun": 1.0, "Jul": 1.0, "Aug": 1.0, "Sep": 1.0, "Oct": 1.0, "Nov": 1.0, "Dec": 1.0}}, "actual_2026": {"Split AC": {"Jan": 3761, "Feb": 7659, "Mar": 6943}, "Floor Standing AC": {"Jan": 418, "Feb": 585, "Mar": 446}, "Window AC": {"Feb": 41, "Mar": 23}, "Concealed Set": {"Jan": 132, "Feb": 99, "Mar": 132}, "Cassette AC": {"Jan": 12, "Feb": 4, "Mar": 4}}, "categories": ["Split AC", "Floor Standing AC", "Window AC", "Concealed Set", "Cassette AC"], "channels": ["BH", "BM", "Tamkeen", "Zagzoog", "Dhamin", "Star Appliance", "Al Ghanem", "Al Shathri", "eXtra", "Al Manea", "SWS", "Black Box", "Al Khunizan"], "future_months": ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]};
+const _DATA = {"model_mix":{"Split AC":[{"model":"ND182C","btu":"18000","comp":"Inverter","type":"CO","qty":9753,"pct":10.85},{"model":"ND242C","btu":"24000","comp":"Inverter","type":"CO","qty":9315,"pct":10.36},{"model":"LO182C","btu":"18000","comp":"Rotary","type":"CO","qty":8578,"pct":9.54},{"model":"LO242C","btu":"24000","comp":"Rotary","type":"CO","qty":5496,"pct":6.12},{"model":"NS182C","btu":"18000","comp":"Inverter","type":"CO","qty":5425,"pct":6.04},{"model":"NW182C","btu":"","comp":"","type":"","qty":4505,"pct":5.01},{"model":"NS242C","btu":"24000","comp":"Inverter","type":"CO","qty":4350,"pct":4.84},{"model":"LB182C","btu":"18000","comp":"Rotary","type":"CO","qty":3891,"pct":4.33},{"model":"LB242C","btu":"24000","comp":"Rotary","type":"CO","qty":3698,"pct":4.11},{"model":"ND182H","btu":"18000","comp":"Inverter","type":"HP","qty":3467,"pct":3.86},{"model":"ND242H","btu":"24000","comp":"Inverter","type":"HP","qty":3421,"pct":3.81},{"model":"NT382C","btu":"38000","comp":"Inverter","type":"CO","qty":2727,"pct":3.03},{"model":"LA182C","btu":"18000","comp":"Rotary","type":"CO","qty":2581,"pct":2.87},{"model":"LA242C","btu":"24000","comp":"Rotary","type":"CO","qty":2276,"pct":2.53},{"model":"NW182H","btu":"","comp":"","type":"","qty":2084,"pct":2.32},{"model":"NS182H","btu":"18000","comp":"Inverter","type":"HP","qty":2006,"pct":2.23},{"model":"NW242C","btu":"","comp":"","type":"","qty":2005,"pct":2.23},{"model":"NF122C","btu":"12000","comp":"Inverter","type":"CO","qty":1465,"pct":1.63},{"model":"NF122H","btu":"12000","comp":"Inverter","type":"CO","qty":989,"pct":1.1},{"model":"LO182H","btu":"18000","comp":"Rotary","type":"HP","qty":1377,"pct":1.53},{"model":"LO242H","btu":"24000","comp":"Rotary","type":"HP","qty":1247,"pct":1.39},{"model":"NW242H","btu":"","comp":"","type":"","qty":1154,"pct":1.28},{"model":"LA242H","btu":"24000","comp":"Rotary","type":"HP","qty":1151,"pct":1.28},{"model":"AM242C","btu":"24000","comp":"Inverter","type":"CO","qty":1150,"pct":1.28},{"model":"NS242H","btu":"24000","comp":"Inverter","type":"HP","qty":1131,"pct":1.26},{"model":"NT382H","btu":"38000","comp":"Inverter","type":"HP","qty":821,"pct":0.91},{"model":"AM182C","btu":"18000","comp":"Inverter","type":"CO","qty":783,"pct":0.87},{"model":"LB182H","btu":"18000","comp":"Rotary","type":"HP","qty":667,"pct":0.74},{"model":"LA182H","btu":"18000","comp":"Rotary","type":"HP","qty":634,"pct":0.71},{"model":"LB242H","btu":"24000","comp":"Rotary","type":"HP","qty":403,"pct":0.45},{"model":"LA302C","btu":"30000","comp":"Rotary","type":"CO","qty":284,"pct":0.32},{"model":"LK242C","btu":"23000","comp":"Rotary","type":"CO","qty":147,"pct":0.16},{"model":"LA302H","btu":"30000","comp":"Rotary","type":"HP","qty":124,"pct":0.14},{"model":"NF182C","btu":"18000","comp":"Inverter","type":"","qty":110,"pct":0.12},{"model":"LK182C","btu":"18200","comp":"Rotary","type":"CO","qty":89,"pct":0.1},{"model":"NF242C","btu":"24000","comp":"Inverter","type":"","qty":84,"pct":0.09},{"model":"NJ242C","btu":"24000","comp":"Rotary","type":"","qty":69,"pct":0.08},{"model":"LK242H","btu":"23000","comp":"Rotary","type":"HP","qty":63,"pct":0.07},{"model":"NF242H","btu":"24000","comp":"Inverter","type":"HP","qty":40,"pct":0.04},{"model":"LK182H","btu":"18000","comp":"Rotary","type":"HP","qty":39,"pct":0.04},{"model":"NG182C","btu":"","comp":"","type":"","qty":35,"pct":0.04},{"model":"NF182H","btu":"18000","comp":"Inverter","type":"","qty":30,"pct":0.03},{"model":"NV242C","btu":"24000","comp":"Inverter","type":"","qty":29,"pct":0.03},{"model":"AF242C","btu":"","comp":"","type":"","qty":49,"pct":0.05},{"model":"AF182C","btu":"","comp":"","type":"","qty":29,"pct":0.03},{"model":"NV242H","btu":"24000","comp":"Inverter","type":"","qty":13,"pct":0.01},{"model":"NV182H","btu":"18000","comp":"Inverter","type":"","qty":13,"pct":0.01},{"model":"LH302C","btu":"30000","comp":"Rotary","type":"CO","qty":11,"pct":0.01},{"model":"NV182C","btu":"18000","comp":"Inverter","type":"","qty":10,"pct":0.01},{"model":"NJ182C","btu":"18000","comp":"Rotary","type":"","qty":10,"pct":0.01},{"model":"LC242C","btu":"24000","comp":"Rotary","type":"CO","qty":8,"pct":0.01},{"model":"NG182H","btu":"","comp":"","type":"","qty":7,"pct":0.01},{"model":"LT302H","btu":"30000","comp":"Rotary","type":"HP","qty":6,"pct":0.01},{"model":"LT302C","btu":"28000","comp":"Rotary","type":"CO","qty":6,"pct":0.01},{"model":"LH242C","btu":"24000","comp":"Rotary","type":"CO","qty":5,"pct":0.01},{"model":"LC242H","btu":"24000","comp":"Rotary","type":"HP","qty":5,"pct":0.01},{"model":"NG242C","btu":"","comp":"","type":"","qty":4,"pct":0.0},{"model":"LC182C","btu":"18000","comp":"Rotary","type":"CO","qty":3,"pct":0.0},{"model":"NG242H","btu":"","comp":"","type":"","qty":2,"pct":0.0},{"model":"LC182H","btu":"18000","comp":"Rotary","type":"HP","qty":2,"pct":0.0},{"model":"NF12H","btu":"12000","comp":"Inverter","type":"HP","qty":1,"pct":0.0}],"Floor Standing AC":[{"model":"APNQ55GT3M","btu":"48000","comp":"Inverter","type":"CO","qty":7724,"pct":81.76},{"model":"APUW55GT3M","btu":"48000","comp":"Inverter","type":"CO","qty":856,"pct":9.06},{"model":"APNW55GT3M","btu":"48000","comp":"Inverter","type":"HP","qty":562,"pct":5.95},{"model":"APNQ55GT3E6","btu":"48000","comp":"Inverter","type":"CO","qty":265,"pct":2.81},{"model":"APNW55GT3E6","btu":"46000","comp":"Inverter","type":"HP","qty":22,"pct":0.23},{"model":"(excluded)","btu":"48000","comp":"Inverter","type":"HP","qty":11,"pct":0.12},{"model":"APUW55GT3E6","btu":"46000","comp":"Inverter","type":"CO","qty":7,"pct":0.07}],"Window AC":[{"model":"C182EC","btu":"18000","comp":"Rotary","type":"","qty":15812,"pct":72.34},{"model":"C182EH","btu":"18000","comp":"Rotary","type":"","qty":3294,"pct":15.07},{"model":"C242EC","btu":"24000","comp":"Rotary","type":"","qty":2614,"pct":11.96},{"model":"H182EC","btu":"18000","comp":"Rotary","type":"","qty":105,"pct":0.48},{"model":"H182EH","btu":"18000","comp":"Rotary","type":"HP","qty":20,"pct":0.09},{"model":"H242EH","btu":"24000","comp":"Rotary","type":"HP","qty":8,"pct":0.04},{"model":"H242EC","btu":"24000","comp":"Rotary","type":"","qty":4,"pct":0.02}],"Concealed Set":[{"model":"ABUQ60GM3TA","btu":"52000","comp":"Inverter","type":"CO","qty":92,"pct":25.34},{"model":"AUUQ60GT6","btu":"52000","comp":"Inverter","type":"CO","qty":57,"pct":15.7},{"model":"AUUQ40GT6","btu":"34000","comp":"Inverter","type":"CO","qty":30,"pct":8.26},{"model":"ABNQ60GM3TA","btu":"52000","comp":"Inverter","type":"CO","qty":24,"pct":6.61},{"model":"ABNW21GM1","btu":"18000","comp":"Inverter","type":"HP","qty":17,"pct":4.68},{"model":"ABNQ60GM3","btu":"52000","comp":"Inverter","type":"CO","qty":16,"pct":4.41},{"model":"AUUW60GT6","btu":"51000","comp":"Inverter","type":"HP","qty":15,"pct":4.13},{"model":"ABNQ55GM3","btu":"47000","comp":"Inverter","type":"CO","qty":12,"pct":3.31},{"model":"ABUQ40GM3TA","btu":"34000","comp":"Inverter","type":"CO","qty":10,"pct":2.75},{"model":"ABNW40GM3","btu":"34000","comp":"Inverter","type":"HP","qty":10,"pct":2.75},{"model":"AUUQ34GT6-C","btu":"26400","comp":"Inverter","type":"CO","qty":9,"pct":2.48},{"model":"ABNW60GM3","btu":"52000","comp":"Inverter","type":"HP","qty":9,"pct":2.48},{"model":"AUUQ55GT6-C","btu":"47000","comp":"Inverter","type":"CO","qty":8,"pct":2.2},{"model":"ABNQ40GM3","btu":"34000","comp":"Inverter","type":"CO","qty":8,"pct":2.2},{"model":"AUUW40GT6-C","btu":"32000","comp":"Inverter","type":"HP","qty":7,"pct":1.93},{"model":"AUUW55GT6-C","btu":"47000","comp":"Inverter","type":"HP","qty":5,"pct":1.38},{"model":"ABNW34GM3","btu":"26400","comp":"Inverter","type":"HP","qty":5,"pct":1.38},{"model":"ABNW28GM1","btu":"22000","comp":"Inverter","type":"HP","qty":4,"pct":1.1},{"model":"ABNW55GM3","btu":"47000","comp":"Inverter","type":"HP","qty":4,"pct":1.1},{"model":"ABUQ28GM1TA","btu":"22000","comp":"Inverter","type":"CO","qty":3,"pct":0.83},{"model":"AUUQ21GT6-C","btu":"16200","comp":"Inverter","type":"CO","qty":2,"pct":0.55},{"model":"AUUW28GT6-C","btu":"22000","comp":"Inverter","type":"HP","qty":2,"pct":0.55},{"model":"ABUW60GM3","btu":"52000","comp":"Inverter","type":"HP","qty":2,"pct":0.55},{"model":"ABNW40GM3TA","btu":"34000","comp":"Inverter","type":"HP","qty":2,"pct":0.55},{"model":"ABNW60GM3TA","btu":"51000","comp":"Inverter","type":"HP","qty":2,"pct":0.55},{"model":"ABUQ34GM3TA","btu":"26400","comp":"Inverter","type":"CO","qty":1,"pct":0.28},{"model":"ABUQ55GM3TA","btu":"47000","comp":"Inverter","type":"CO","qty":1,"pct":0.28},{"model":"AUUW21GT6","btu":"17000","comp":"Inverter","type":"HP","qty":1,"pct":0.28},{"model":"ABUW34GM3","btu":"26400","comp":"Inverter","type":"HP","qty":1,"pct":0.28},{"model":"ABUW28GM1","btu":"22000","comp":"Inverter","type":"HP","qty":1,"pct":0.28},{"model":"ABN6536MT6","btu":"","comp":"Inverter","type":"","qty":1,"pct":0.28},{"model":"ABNQ60LM3","btu":"52000","comp":"Inverter","type":"CO","qty":1,"pct":0.28},{"model":"ABNQ60LM3T6","btu":"52000","comp":"Inverter","type":"CO","qty":1,"pct":0.28}],"Cassette AC":[{"model":"AM182C","btu":"18000","comp":"Inverter","type":"CO","qty":7,"pct":35.0},{"model":"GTNW34GNL","btu":"26400","comp":"Inverter","type":"HP","qty":5,"pct":25.0},{"model":"AUUQ60GT6","btu":"52000","comp":"Inverter","type":"CO","qty":4,"pct":20.0},{"model":"ATUQ28GPL","btu":"22000","comp":"Inverter","type":"CO","qty":1,"pct":5.0},{"model":"ATNW21GPL","btu":"18000","comp":"Inverter","type":"HP","qty":1,"pct":5.0},{"model":"ATNQ34GNLT6","btu":"26000","comp":"Inverter","type":"CO","qty":1,"pct":5.0},{"model":"AUUQ34GT6","btu":"26000","comp":"Inverter","type":"CO","qty":1,"pct":5.0}]},"channel_mix":{"Split AC":{"eXtra":39.41,"Al Manea":20.9,"BH":16.89,"SWS":6.64,"Black Box":5.45,"Tamkeen":3.28,"BM":1.98,"Dhamin":1.83,"Al Khunizan":1.33,"Star Appliance":0.95,"Zagzoog":0.59,"Al Shathri":0.53,"Al Ghanem":0.22},"Floor Standing AC":{"BH":53.94,"Al Manea":8.9,"Tamkeen":7.52,"Al Khunizan":7.39,"Al Shathri":5.35,"BM":4.65,"eXtra":4.31,"Star Appliance":3.18,"SWS":1.93,"Al Ghanem":1.66,"Black Box":0.64,"Dhamin":0.55},"Window AC":{"BH":41.3,"Al Manea":30.9,"eXtra":26.08,"Black Box":1.03,"BM":0.57,"Dhamin":0.11,"Tamkeen":0.01},"Concealed Set":{"BH":59.5,"Star Appliance":13.77,"Al Shathri":11.02,"BM":5.51,"SWS":3.31,"Al Manea":2.2,"Al Khunizan":2.2,"Al Ghanem":1.38,"Dhamin":0.83,"Black Box":0.28},"Cassette AC":{"Al Shathri":35.0,"Al Khunizan":30.0,"BM":25.0,"BH":5.0,"Al Ghanem":5.0}},"channel_stock":{"BH":{"group":"IR","stock":7356,"wos":52.3,"wos_opportunity":12,"wos_healthy":24},"BM":{"group":"IR","stock":459,"wos":14.1,"wos_opportunity":12,"wos_healthy":24},"Tamkeen":{"group":"IR","stock":1456,"wos":17.4,"wos_opportunity":12,"wos_healthy":24},"Zagzoog":{"group":"IR","stock":808,"wos":49.9,"wos_opportunity":12,"wos_healthy":24},"Dhamin":{"group":"IR","stock":692,"wos":21.2,"wos_opportunity":12,"wos_healthy":24},"Star Appliance":{"group":"IR","stock":419,"wos":19.7,"wos_opportunity":12,"wos_healthy":24},"Al Ghanem":{"group":"IR","stock":351,"wos":39.9,"wos_opportunity":12,"wos_healthy":24},"Al Shathri":{"group":"IR","stock":331,"wos":12.6,"wos_opportunity":12,"wos_healthy":24},"eXtra":{"group":"OR","stock":9455,"wos":17.2,"wos_opportunity":6,"wos_healthy":8},"Al Manea":{"group":"OR","stock":2209,"wos":18.5,"wos_opportunity":6,"wos_healthy":8},"SWS":{"group":"OR","stock":365,"wos":3.8,"wos_opportunity":6,"wos_healthy":8},"Black Box":{"group":"OR","stock":536,"wos":6.8,"wos_opportunity":6,"wos_healthy":8},"Al Khunizan":{"group":"OR","stock":951,"wos":41.6,"wos_opportunity":6,"wos_healthy":8}},"yoy_growth":{"Split AC":{"Jan":1.539,"Feb":0.614,"Mar":1.027,"Apr":1.04,"May":0.587,"Jun":0.553,"Jul":1.004,"Aug":1.392,"Sep":1.049,"Oct":1.023,"Nov":0.861,"Dec":0.419},"Floor Standing AC":{"Jan":1.229,"Feb":2.793,"Mar":1.318,"Apr":1.287,"May":1.224,"Jun":0.588,"Jul":0.976,"Aug":1.238,"Sep":1.308,"Oct":1.308,"Nov":0.565,"Dec":0.412},"Window AC":{"Jan":1.0,"Feb":37.682,"Mar":45.112,"Apr":55.471,"May":0.805,"Jun":0.187,"Jul":7.4,"Aug":1.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":1.0},"Concealed Set":{"Jan":1.0,"Feb":1.0,"Mar":1.0,"Apr":1.0,"May":1.0,"Jun":1.0,"Jul":1.0,"Aug":1.0,"Sep":1.0,"Oct":1.0,"Nov":1.0,"Dec":1.0},"Cassette AC":{"Jan":1.0,"Feb":1.0,"Mar":1.0,"Apr":1.0,"May":1.0,"Jun":1.0,"Jul":1.0,"Aug":1.0,"Sep":1.0,"Oct":1.0,"Nov":1.0,"Dec":1.0}},"actual_2026":{"Split AC":{"Jan":3761,"Feb":7659,"Mar":6943},"Floor Standing AC":{"Jan":418,"Feb":585,"Mar":446},"Window AC":{"Feb":41,"Mar":23},"Concealed Set":{"Jan":132,"Feb":99,"Mar":132},"Cassette AC":{"Jan":12,"Feb":4,"Mar":4}},"categories":["Split AC","Floor Standing AC","Window AC","Concealed Set","Cassette AC"],"channels":["BH","BM","Tamkeen","Zagzoog","Dhamin","Star Appliance","Al Ghanem","Al Shathri","eXtra","Al Manea","SWS","Black Box","Al Khunizan"],"future_months":["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"actual_2024":{"Split AC":{"Jan":3477,"Feb":8966,"Mar":7402,"Apr":6583,"May":12026,"Jun":11236,"Jul":5945,"Aug":4745,"Sep":9720,"Oct":4098,"Nov":4754,"Dec":4526},"Floor Standing AC":{"Jan":271,"Feb":169,"Mar":658,"Apr":703,"May":881,"Jun":1732,"Jul":754,"Aug":659,"Sep":689,"Oct":357,"Nov":487,"Dec":306},"Window AC":{"Jan":28,"Feb":107,"Mar":252,"Apr":105,"May":220,"Jun":438,"Jul":10,"Aug":91,"Sep":17173,"Oct":11107,"Nov":5828,"Dec":2839},"Concealed Set":{},"Cassette AC":{}},"actual_2025":{"Split AC":{"Jan":5359,"Feb":5515,"Mar":7605,"Apr":6862,"May":7079,"Jun":6215,"Jul":5962,"Aug":6610,"Sep":10203,"Oct":4212,"Nov":4124,"Dec":1911},"Floor Standing AC":{"Jan":333,"Feb":474,"Mar":867,"Apr":905,"May":1079,"Jun":1018,"Jul":744,"Aug":817,"Sep":901,"Oct":475,"Nov":280,"Dec":153},"Window AC":{"Jan":1197,"Feb":4032,"Mar":10466,"Apr":5769,"May":178,"Jun":83,"Jul":74,"Sep":2,"Nov":1},"Concealed Set":{},"Cassette AC":{}}};
 
 const CATEGORIES = _DATA.categories;
 const CHANNELS = _DATA.channels;
@@ -173,20 +225,174 @@ const CHANNEL_MIX = _DATA.channel_mix;
 const CHANNEL_STOCK = _DATA.channel_stock;
 const YOY = _DATA.yoy_growth;
 const ACTUAL_2026 = _DATA.actual_2026;
+const ACTUAL_2024 = _DATA.actual_2024;
+const ACTUAL_2025 = _DATA.actual_2025;
 
 let mixResults = null;  // Store last distribution result
+
+// ─── Inspect (점검 필요) highlight ────────────────────────────────────────────
+let inspectModels = {};  // key: "cat|model" → true
+try { const s = localStorage.getItem('inspectModels'); if(s) inspectModels = JSON.parse(s); } catch(e){}
+
+function toggleInspect(cat, model, event) {
+  event.stopPropagation();
+  const key = cat + '|' + model;
+  if (inspectModels[key]) { delete inspectModels[key]; }
+  else { inspectModels[key] = true; }
+  try { localStorage.setItem('inspectModels', JSON.stringify(inspectModels)); } catch(e){}
+  // Re-apply classes to all matching rows
+  document.querySelectorAll(`tr[data-inspect-key="${CSS.escape(key)}"]`).forEach(tr => {
+    tr.classList.toggle('inspect-row', !!inspectModels[key]);
+  });
+}
+
+function clearInspect() {
+  inspectModels = {};
+  try { localStorage.removeItem('inspectModels'); } catch(e){}
+  document.querySelectorAll('tr.inspect-row').forEach(tr => tr.classList.remove('inspect-row'));
+}
+
+function getInspectCount() {
+  return Object.keys(inspectModels).length;
+}
 
 // ─── Tab switch ─────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => {
-    const ids = ['mix','sim','trend'];
+    const ids = ['mix','sim','annual','trend'];
     t.classList.toggle('active', ids[i] === name);
   });
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  if (name === 'mix' && !document.querySelector('#mix-input-area .input-grid')) buildMixInputs();
+  if (name === 'mix') {
+    if (!document.querySelector('#annual-target-area .input-item, #annual-target-area > div')) buildAnnualTargetInputs();
+    if (!document.querySelector('#mix-input-area .input-grid')) buildMixInputs();
+  }
   if (name === 'sim' && !document.querySelector('#stock-summary table')) buildSimTab();
+  if (name === 'annual') buildAnnualTab();
   if (name === 'trend') buildTrendTab();
+}
+
+// ─── TAB 1: ANNUAL TARGET → MONTHLY DISTRIBUTION ────────────────────────────
+function buildAnnualTargetInputs() {
+  const area = document.getElementById('annual-target-area');
+  if (!area) return;
+  const allMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">';
+  CATEGORIES.forEach(cat => {
+    const actual = ACTUAL_2026[cat] || {};
+    const q1 = (actual.Jan||0) + (actual.Feb||0) + (actual.Mar||0);
+    html += `<div style="background:#f8fafd;border:1px solid #e0e6f0;border-radius:6px;padding:10px;">
+      <div style="font-size:13px;font-weight:700;color:#0f3460;margin-bottom:6px;">${cat}</div>
+      <div style="font-size:11px;color:#666;margin-bottom:6px;">Jan~Mar 실적: <strong>${fmt(q1)}</strong>대 → 잔여(Apr~Dec) 자동 계산</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label style="font-size:11px;color:#555;font-weight:600;white-space:nowrap;">연간 목표:</label>
+        <input type="number" id="annual-${cat}" placeholder="0" min="0" style="flex:1;padding:6px 8px;border:1px solid #dde1e8;border-radius:4px;font-size:13px;text-align:right;"
+          oninput="previewAnnualTarget('${cat}')">
+        <span style="font-size:11px;color:#888;">대</span>
+      </div>
+      <div id="annual-preview-${cat}" style="font-size:11px;color:#27ae60;margin-top:4px;"></div>
+    </div>`;
+  });
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+function previewAnnualTarget(cat) {
+  const el = document.getElementById(`annual-${cat}`);
+  const annual = parseInt(el?.value || '0') || 0;
+  const preview = document.getElementById(`annual-preview-${cat}`);
+  if (!preview) return;
+  if (annual <= 0) { preview.textContent = ''; return; }
+  const actual = ACTUAL_2026[cat] || {};
+  const q1 = (actual.Jan||0) + (actual.Feb||0) + (actual.Mar||0);
+  const remaining = annual - q1;
+  if (remaining < 0) {
+    preview.style.color = '#e74c3c';
+    preview.textContent = `⚠️ Q1 실적(${fmt(q1)}) 초과! 잔여: -${fmt(-remaining)}`;
+  } else {
+    preview.style.color = '#27ae60';
+    preview.textContent = `Apr~Dec 분배 대상: ${fmt(remaining)}대 (연간 ${fmt(annual)} - Q1 ${fmt(q1)})`;
+  }
+}
+
+function applyAnnualTarget() {
+  // 2025 Apr~Dec 계절성 가중치 계산
+  const seasonWeights = {};
+  CATEGORIES.forEach(cat => {
+    const act25 = ACTUAL_2025[cat] || {};
+    const futureTotal = FUTURE_MONTHS.reduce((s, m) => s + (act25[m] || 0), 0);
+    if (futureTotal > 0) {
+      seasonWeights[cat] = {};
+      FUTURE_MONTHS.forEach(m => {
+        seasonWeights[cat][m] = (act25[m] || 0) / futureTotal;
+      });
+    } else {
+      // 2025 데이터 없으면 균등 분배
+      seasonWeights[cat] = {};
+      FUTURE_MONTHS.forEach(m => { seasonWeights[cat][m] = 1 / FUTURE_MONTHS.length; });
+    }
+  });
+
+  let applied = 0;
+  let previewRows = [];
+
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById(`annual-${cat}`);
+    const annual = parseInt(el?.value || '0') || 0;
+    if (annual <= 0) return;
+
+    const actual = ACTUAL_2026[cat] || {};
+    const q1 = (actual.Jan||0) + (actual.Feb||0) + (actual.Mar||0);
+    const remaining = Math.max(0, annual - q1);
+    const weights = seasonWeights[cat];
+
+    let rowHtml = `<tr><td style="font-weight:700;color:#0f3460">${cat}</td><td class="num">${fmt(annual)}</td><td class="num">${fmt(q1)}</td><td class="num">${fmt(remaining)}</td>`;
+    let monthSum = 0;
+    FUTURE_MONTHS.forEach((m, i) => {
+      const isLast = i === FUTURE_MONTHS.length - 1;
+      let qty = isLast ? remaining - monthSum : Math.round(remaining * weights[m]);
+      if (qty < 0) qty = 0;
+      monthSum += (isLast ? qty : Math.round(remaining * weights[m]));
+      const inputEl = document.getElementById(`mix-${cat}-${m}`);
+      if (inputEl) inputEl.value = qty > 0 ? qty : '';
+      rowHtml += `<td class="num">${qty > 0 ? fmt(qty) : '-'}</td>`;
+    });
+    rowHtml += '</tr>';
+    previewRows.push(rowHtml);
+    applied++;
+  });
+
+  if (applied === 0) {
+    alert('연간 목표를 먼저 입력해주세요!');
+    return;
+  }
+
+  // 미리보기 표시
+  const preview = document.getElementById('annual-target-preview');
+  if (preview) {
+    preview.style.display = 'block';
+    preview.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:8px;">📋 월별 분배 결과 (2025 계절성 기반)</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>카테고리</th><th>연간 목표</th><th>Q1 실적</th><th>Apr~Dec 분배량</th>${FUTURE_MONTHS.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+        <tbody>${previewRows.join('')}</tbody>
+      </table></div>
+      <div style="font-size:11px;color:#888;margin-top:6px;">※ STEP 1 입력값에 자동 반영됨. 개별 수정 후 [모델별 자동 분배] 클릭하세요.</div>
+    `;
+  }
+  alert(`✅ ${applied}개 카테고리 월별 분배 완료!\n[STEP 1] 입력값을 확인 후 [모델별 자동 분배]를 클릭하세요.`);
+}
+
+function clearAnnualTargets() {
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById(`annual-${cat}`);
+    if (el) el.value = '';
+    const prev = document.getElementById(`annual-preview-${cat}`);
+    if (prev) prev.textContent = '';
+  });
+  const preview = document.getElementById('annual-target-preview');
+  if (preview) preview.style.display = 'none';
 }
 
 // ─── TAB 1: MODEL MIX ───────────────────────────────────────────────────────
@@ -315,8 +521,13 @@ function selectMixCat(cat, el) {
   });
 
   // Build table
-  let html = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Model</th><th>BTU</th><th>Comp</th><th>Type</th>`;
+  const inspectCnt = getInspectCount();
+  let html = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+    <span style="font-size:12px;color:#888;">⭐ 행을 클릭하면 점검 필요 표시 (노란 하이라이트)</span>
+    ${inspectCnt>0 ? `<button class="btn btn-warn" style="padding:4px 10px;font-size:11px;" onclick="clearInspect()">🗑️ 점검 표시 전체 초기화 (${inspectCnt}개)</button>` : ''}
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:28px"></th><th>Model</th><th>BTU</th><th>Comp</th><th>Type</th>`;
   activeMonths.forEach(m => html += `<th>${m}<br><span style="font-size:10px;font-weight:400">${fmt(data[m].total)}</span></th>`);
   html += `<th>합계</th><th>기여율</th></tr></thead><tbody>`;
 
@@ -339,7 +550,11 @@ function selectMixCat(cat, el) {
     const info = (MODEL_MIX[cat]||[]).find(x=>x.model===model)||{};
     const total = modelTotals[model];
     const pct = grandSum>0 ? (total/grandSum*100).toFixed(1) : '0';
-    html += `<tr><td>${model}</td><td>${info.btu||''}</td><td>${info.comp||''}</td><td>${info.type||''}`;
+    const ikey = cat + '|' + model;
+    const isInspect = !!inspectModels[ikey];
+    html += `<tr class="${isInspect?'inspect-row':''}" data-inspect-key="${ikey}" onclick="toggleInspect('${cat.replace(/'/g,"\\'")}','${model.replace(/'/g,"\\'")}',event)" style="cursor:pointer">`;
+    html += `<td><button class="inspect-btn" title="점검 필요 표시">${isInspect?'⭐':'☆'}</button></td>`;
+    html += `<td>${model}</td><td>${info.btu||''}</td><td>${info.comp||''}</td><td>${info.type||''}`;
     html += `</td>`;
     activeMonths.forEach(m => {
       const r = (data[m]?.models||[]).find(x=>x.model===model);
@@ -533,7 +748,235 @@ function exportSimCSV() {
   downloadCSV(csv, 'Channel_SellThru_Sim.csv');
 }
 
-// ─── TAB 3: TREND ────────────────────────────────────────────────────────────
+// ─── TAB 3: ANNUAL VIEW ──────────────────────────────────────────────────────
+const ACTUAL_MONTHS = ['Jan','Feb','Mar'];
+const ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function buildAnnualTab() {
+  const rows = CATEGORIES.map(cat => {
+    const actual = ACTUAL_2026[cat] || {};
+    const simInputs = {};
+    FUTURE_MONTHS.forEach(m => {
+      const el = document.getElementById('mix-' + cat + '-' + m);
+      simInputs[m] = el ? (parseInt(el.value) || 0) : 0;
+    });
+    const monthData = {};
+    ALL_MONTHS.forEach(m => {
+      if (ACTUAL_MONTHS.includes(m)) monthData[m] = { val: actual[m] || 0, type: 'actual' };
+      else monthData[m] = { val: simInputs[m] || 0, type: 'sim' };
+    });
+    const totalActual = ACTUAL_MONTHS.reduce((s,m) => s + (actual[m]||0), 0);
+    const totalSim = FUTURE_MONTHS.reduce((s,m) => s + (simInputs[m]||0), 0);
+    return { cat, monthData, totalActual, totalSim, total: totalActual + totalSim };
+  });
+
+  // Monthly table
+  let html = '<div class="tbl-wrap"><table><thead><tr><th>Category</th>';
+  ACTUAL_MONTHS.forEach(m => html += `<th style="background:#1565c0">🟦 ${m}<br><small>실적</small></th>`);
+  FUTURE_MONTHS.forEach(m => html += `<th style="background:#2e7d32">🟩 ${m}<br><small>목표</small></th>`);
+  html += '<th>Q1 실적</th><th>Q2~Q4 목표</th><th>연간 합계</th></tr></thead><tbody>';
+
+  const catTotals = { actual: {}, sim: {}, grand: {} };
+  ALL_MONTHS.forEach(m => { catTotals.actual[m] = 0; catTotals.sim[m] = 0; catTotals.grand[m] = 0; });
+  let grandActual = 0, grandSim = 0;
+
+  rows.forEach(r => {
+    html += `<tr><td style="font-weight:700">${r.cat}</td>`;
+    ALL_MONTHS.forEach(m => {
+      const d = r.monthData[m];
+      if (d.type === 'actual') {
+        catTotals.actual[m] += d.val;
+        html += `<td class="num" style="background:#e3f2fd;color:#1565c0;font-weight:600">${d.val > 0 ? fmt(d.val) : '—'}</td>`;
+      } else {
+        catTotals.sim[m] += d.val;
+        html += `<td class="num" style="background:#e8f5e9;color:#2e7d32;font-weight:600">${d.val > 0 ? fmt(d.val) : '—'}</td>`;
+      }
+    });
+    grandActual += r.totalActual;
+    grandSim += r.totalSim;
+    html += `<td class="num" style="font-weight:700;color:#1565c0">${fmt(r.totalActual)}</td>`;
+    html += `<td class="num" style="font-weight:700;color:#2e7d32">${fmt(r.totalSim)}</td>`;
+    html += `<td class="num" style="font-weight:700;background:#fff9e6">${fmt(r.total)}</td>`;
+    html += '</tr>';
+  });
+
+  // Total row
+  html += '<tr style="background:#f0f0f0;font-weight:700"><td>합계</td>';
+  ACTUAL_MONTHS.forEach(m => html += `<td class="num" style="background:#bbdefb;color:#0d47a1;font-weight:700">${fmt(catTotals.actual[m])}</td>`);
+  FUTURE_MONTHS.forEach(m => html += `<td class="num" style="background:#c8e6c9;color:#1b5e20;font-weight:700">${fmt(catTotals.sim[m])}</td>`);
+  html += `<td class="num" style="color:#0d47a1;font-weight:700">${fmt(grandActual)}</td>`;
+  html += `<td class="num" style="color:#1b5e20;font-weight:700">${fmt(grandSim)}</td>`;
+  html += `<td class="num" style="background:#ffe082;font-weight:700;font-size:14px">${fmt(grandActual + grandSim)}</td>`;
+  html += '</tr></tbody></table></div>';
+  document.getElementById('annual-table').innerHTML = html;
+
+  // Summary cards
+  let sumHtml = `<div class="stat-grid">`;
+  rows.forEach(r => {
+    sumHtml += `<div class="stat-box">
+      <div style="font-size:12px;font-weight:700;color:#0f3460;margin-bottom:6px">${r.cat}</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:#1565c0;font-size:11px">Q1 실적</span>
+        <span style="color:#1565c0;font-weight:700">${fmt(r.totalActual)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:#2e7d32;font-size:11px">Q2~Q4 목표</span>
+        <span style="color:#2e7d32;font-weight:700">${fmt(r.totalSim)}</span>
+      </div>
+      <div style="border-top:1px solid #ddd;padding-top:4px;display:flex;justify-content:space-between">
+        <span style="font-size:11px;color:#888">연간 합계</span>
+        <span style="font-weight:700;color:#0f3460;font-size:15px">${fmt(r.total)}</span>
+      </div>
+      ${r.totalSim > 0 ? `<div style="margin-top:4px;font-size:10px;color:#888">Q1 비중: ${(r.totalActual/r.total*100).toFixed(0)}% | Q2~Q4: ${(r.totalSim/r.total*100).toFixed(0)}%</div>` : ''}
+    </div>`;
+  });
+  sumHtml += `<div class="stat-box" style="border:2px solid #f39c12">
+    <div style="font-size:12px;font-weight:700;color:#0f3460;margin-bottom:6px">전체 합계</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span style="color:#1565c0;font-size:11px">Q1 실적</span>
+      <span style="color:#1565c0;font-weight:700">${fmt(grandActual)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span style="color:#2e7d32;font-size:11px">Q2~Q4 목표</span>
+      <span style="color:#2e7d32;font-weight:700">${fmt(grandSim)}</span>
+    </div>
+    <div style="border-top:1px solid #ddd;padding-top:4px;display:flex;justify-content:space-between">
+      <span style="font-size:11px;color:#888">연간 합계</span>
+      <span style="font-weight:700;color:#0f3460;font-size:18px">${fmt(grandActual + grandSim)}</span>
+    </div>
+  </div>`;
+  sumHtml += '</div>';
+  document.getElementById('annual-summary').innerHTML = sumHtml;
+  buildYearComparison();
+}
+
+// ─── YEAR COMPARISON TABLE ─────────────────────────────────────────────────
+function buildYearComparison() {
+  const ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const ML = {Jan:'1월',Feb:'2월',Mar:'3월',Apr:'4월',May:'5월',Jun:'6월',Jul:'7월',Aug:'8월',Sep:'9월',Oct:'10월',Nov:'11월',Dec:'12월'};
+  const YRS = [
+    {key:'2024', label:'2024 실적', color:'#7b1fa2', bg:'#f3e5f5', hbg:'#ce93d8'},
+    {key:'2025', label:'2025 실적', color:'#1565c0', bg:'#e3f2fd', hbg:'#90caf9'},
+    {key:'2026', label:'2026 실적+목표', color:'#2e7d32', bg:'#e8f5e9', hbg:'#a5d6a7'},
+  ];
+
+  // 2026 data: actual Jan-Mar + sim Apr-Dec
+  const data26 = {};
+  CATEGORIES.forEach(cat => {
+    data26[cat] = {};
+    const a = ACTUAL_2026[cat] || {};
+    ALL_MONTHS.forEach(m => {
+      if (['Jan','Feb','Mar'].includes(m)) {
+        data26[cat][m] = a[m] || 0;
+      } else {
+        const el = document.getElementById('mix-' + cat + '-' + m);
+        data26[cat][m] = el ? (parseInt(el.value) || 0) : 0;
+      }
+    });
+  });
+
+  function getDataForYear(yr) {
+    return yr === '2024' ? ACTUAL_2024 : yr === '2025' ? ACTUAL_2025 : data26;
+  }
+
+  // Grand totals
+  const grand = {};
+  YRS.forEach(yr => {
+    const d = getDataForYear(yr.key);
+    grand[yr.key] = CATEGORIES.reduce((s,cat) =>
+      s + ALL_MONTHS.reduce((s2,m) => s2 + ((d[cat] || {})[m] || 0), 0), 0);
+  });
+
+  // Summary cards
+  let sumHtml = '<div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:16px">';
+  CATEGORIES.forEach(cat => {
+    sumHtml += '<div class="stat-box"><div style="font-size:12px;font-weight:700;color:#0f3460;margin-bottom:6px">' + cat + '</div>';
+    let prev = 0;
+    YRS.forEach(yr => {
+      const d = getDataForYear(yr.key);
+      const v = ALL_MONTHS.reduce((s,m) => s + ((d[cat] || {})[m] || 0), 0);
+      const yoy = prev > 0 ? ' <span style="font-size:10px;color:#888">(YoY ' + ((v/prev-1)*100).toFixed(0) + '%)</span>' : '';
+      sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+              + '<span style="color:' + yr.color + ';font-size:11px">' + yr.label + '</span>'
+              + '<span style="color:' + yr.color + ';font-weight:700">' + (v > 0 ? v.toLocaleString() : '—') + (yr.key !== '2024' ? yoy : '') + '</span>'
+              + '</div>';
+      prev = v;
+    });
+    sumHtml += '</div>';
+  });
+  sumHtml += '<div class="stat-box" style="border:2px solid #f39c12"><div style="font-size:12px;font-weight:700;color:#0f3460;margin-bottom:6px">전체 합계</div>';
+  let prev2 = 0;
+  YRS.forEach(yr => {
+    const v = grand[yr.key];
+    const yoy = prev2 > 0 ? ' <span style="font-size:10px;color:#888">(YoY ' + ((v/prev2-1)*100).toFixed(0) + '%)</span>' : '';
+    sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+            + '<span style="color:' + yr.color + ';font-size:11px">' + yr.label + '</span>'
+            + '<span style="color:' + yr.color + ';font-weight:700;font-size:13px">' + v.toLocaleString() + (yr.key !== '2024' ? yoy : '') + '</span>'
+            + '</div>';
+    prev2 = v;
+  });
+  sumHtml += '</div></div>';
+
+  // Monthly detail table
+  let tbl = '<div class="tbl-wrap"><table><thead><tr><th>Category</th><th>Year</th>';
+  ALL_MONTHS.forEach(m => tbl += '<th>' + ML[m] + '</th>');
+  tbl += '<th>연간 합계</th></tr></thead><tbody>';
+
+  CATEGORIES.forEach(cat => {
+    YRS.forEach((yr, yi) => {
+      const d = (getDataForYear(yr.key)[cat] || {});
+      const rowTotal = ALL_MONTHS.reduce((s,m) => s + (d[m] || 0), 0);
+      tbl += '<tr' + (yi === YRS.length-1 ? ' style="border-bottom:2px solid #ccc"' : '') + '>';
+      if (yi === 0) tbl += '<td rowspan="' + YRS.length + '" style="font-weight:700;background:#f8fafd;vertical-align:middle">' + cat + '</td>';
+      tbl += '<td style="color:' + yr.color + ';font-weight:600;background:' + yr.bg + ';white-space:nowrap">' + yr.label + '</td>';
+      ALL_MONTHS.forEach(m => {
+        const v = d[m] || 0;
+        tbl += '<td class="num" style="background:' + yr.bg + ';color:' + yr.color + '">' + (v > 0 ? v.toLocaleString() : '—') + '</td>';
+      });
+      tbl += '<td class="num" style="background:' + yr.hbg + ';color:' + yr.color + ';font-weight:700">' + (rowTotal > 0 ? rowTotal.toLocaleString() : '—') + '</td>';
+      tbl += '</tr>';
+    });
+  });
+
+  // Grand total rows
+  YRS.forEach((yr, yi) => {
+    const d = getDataForYear(yr.key);
+    tbl += '<tr style="font-weight:700">';
+    if (yi === 0) tbl += '<td rowspan="' + YRS.length + '" style="font-weight:700;background:#e8e8e8;vertical-align:middle">합계</td>';
+    tbl += '<td style="color:' + yr.color + ';font-weight:700;background:' + yr.hbg + ';white-space:nowrap">' + yr.label + '</td>';
+    ALL_MONTHS.forEach(m => {
+      const v = CATEGORIES.reduce((s,cat) => s + ((d[cat] || {})[m] || 0), 0);
+      tbl += '<td class="num" style="background:' + yr.hbg + ';color:' + yr.color + ';font-weight:700">' + (v > 0 ? v.toLocaleString() : '—') + '</td>';
+    });
+    tbl += '<td class="num" style="background:' + (yr.key === '2026' ? '#ffe082' : yr.hbg) + ';color:' + yr.color + ';font-weight:700;font-size:13px">' + grand[yr.key].toLocaleString() + '</td>';
+    tbl += '</tr>';
+  });
+  tbl += '</tbody></table></div>';
+
+  document.getElementById('year-compare-table').innerHTML = sumHtml + tbl;
+}
+
+function exportAnnualCSV() {
+  let csv = 'Category,Type,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec,Q1_실적,Q2~Q4_목표,연간합계\n';
+  CATEGORIES.forEach(cat => {
+    const actual = ACTUAL_2026[cat] || {};
+    const simInputs = {};
+    FUTURE_MONTHS.forEach(m => {
+      const el = document.getElementById('mix-' + cat + '-' + m);
+      simInputs[m] = el ? (parseInt(el.value) || 0) : 0;
+    });
+    const q1 = ACTUAL_MONTHS.reduce((s,m) => s + (actual[m]||0), 0);
+    const q2q4 = FUTURE_MONTHS.reduce((s,m) => s + (simInputs[m]||0), 0);
+    let row = `"${cat}","실적+목표"`;
+    ACTUAL_MONTHS.forEach(m => row += `,${actual[m]||0}`);
+    FUTURE_MONTHS.forEach(m => row += `,${simInputs[m]||0}`);
+    row += `,${q1},${q2q4},${q1+q2q4}`;
+    csv += row + '\n';
+  });
+  downloadCSV(csv, 'Annual_View_2026.csv');
+}
+
+// ─── TAB 4: TREND ────────────────────────────────────────────────────────────
 function buildTrendTab() {
   // YoY table
   let html = `<div class="tbl-wrap"><table>
@@ -569,11 +1012,15 @@ function showModelMix(cat, el) {
   if (models.length === 0) { document.getElementById('model-mix-detail').innerHTML='<p>데이터 없음</p>'; return; }
   const top50 = models.slice(0, 50);
   const maxQty = top50[0]?.qty || 1;
-  let html = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Rank</th><th>Model</th><th>BTU</th><th>Compressor</th><th>Type</th><th>2025~26 수량</th><th>믹스 비율</th><th>비율 시각화</th></tr></thead><tbody>`;
+  let html = `<div style="font-size:12px;color:#888;margin-bottom:6px;">⭐ 행을 클릭하면 점검 필요 표시</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:28px"></th><th>Rank</th><th>Model</th><th>BTU</th><th>Compressor</th><th>Type</th><th>2025~26 수량</th><th>믹스 비율</th><th>비율 시각화</th></tr></thead><tbody>`;
   top50.forEach((m, i) => {
     const barW = Math.round(m.qty / maxQty * 120);
-    html += `<tr>
+    const ikey = cat + '|' + m.model;
+    const isInspect = !!inspectModels[ikey];
+    html += `<tr class="${isInspect?'inspect-row':''}" data-inspect-key="${ikey}" onclick="toggleInspect('${cat.replace(/'/g,"\\'")}','${m.model.replace(/'/g,"\\'")}',event)" style="cursor:pointer">
+      <td><button class="inspect-btn" title="점검 필요">${isInspect?'⭐':'☆'}</button></td>
       <td class="num">${i+1}</td>
       <td>${m.model}</td>
       <td>${m.btu}</td>
@@ -601,6 +1048,7 @@ function downloadCSV(csv, filename) {
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
+buildAnnualTargetInputs();
 buildMixInputs();
 </script>
 </body>
