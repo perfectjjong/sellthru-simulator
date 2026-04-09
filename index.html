@@ -1739,17 +1739,17 @@ function initParamPanel() {
   });
   document.getElementById('p-modelmix-cats').innerHTML = mHtml;
 
-  // === 1번 공급전략: 24/25년 분기별 Sell Out 비중 참고 ===
+  // === 1번 공급전략: 24/25년 분기별 Sell Out 비중 참고 (Q1 포함) ===
   {
-    const qMonths = {Q2:['Apr','May','Jun'], Q3:['Jul','Aug','Sep'], Q4:['Oct','Nov','Dec']};
+    const qMonths = {Q1:['Jan','Feb','Mar'], Q2:['Apr','May','Jun'], Q3:['Jul','Aug','Sep'], Q4:['Oct','Nov','Dec']};
     let refHtml = '<div style="display:flex;gap:6px">';
     [['2024', ACTUAL_2024], ['2025', ACTUAL_2025]].forEach(([yr, src]) => {
-      const qTotals = {Q2:0, Q3:0, Q4:0};
+      const qTotals = {Q1:0, Q2:0, Q3:0, Q4:0};
       CATEGORIES.forEach(cat => { const d = src[cat]||{}; Object.entries(qMonths).forEach(([q, ms]) => { ms.forEach(m => { qTotals[q] += d[m]||0; }); }); });
-      const total = qTotals.Q2 + qTotals.Q3 + qTotals.Q4;
+      const total = qTotals.Q1 + qTotals.Q2 + qTotals.Q3 + qTotals.Q4;
       refHtml += `<div style="flex:1;background:#e8f4fd;border-radius:4px;padding:4px 6px;text-align:center">
         <div style="font-size:9px;color:#555;font-weight:600">📅 ${yr} 실적</div>
-        <div style="font-size:9px;color:#0f3460;font-weight:700">${total > 0 ? `Q2 ${(qTotals.Q2/total*100).toFixed(0)}% / Q3 ${(qTotals.Q3/total*100).toFixed(0)}% / Q4 ${(qTotals.Q4/total*100).toFixed(0)}%` : 'N/A'}</div>
+        <div style="font-size:9px;color:#0f3460;font-weight:700">${total > 0 ? `Q1 ${(qTotals.Q1/total*100).toFixed(0)}% / Q2 ${(qTotals.Q2/total*100).toFixed(0)}% / Q3 ${(qTotals.Q3/total*100).toFixed(0)}% / Q4 ${(qTotals.Q4/total*100).toFixed(0)}%` : 'N/A'}</div>
       </div>`;
     });
     refHtml += '</div>';
