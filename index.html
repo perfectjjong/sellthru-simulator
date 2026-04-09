@@ -286,6 +286,16 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
       <!-- 8. 채널 믹스 시프트 -->
       <div class="param-section">
         <div class="param-section-title">8️⃣ 채널 믹스 시프트 (OR/IR 비중)</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <div style="flex:1;background:#e8f4fd;border-radius:4px;padding:4px 6px;text-align:center">
+            <div style="font-size:9px;color:#555;font-weight:600">📅 2024 실적</div>
+            <div style="font-size:10px;font-weight:700;color:#0f3460">OR 64.5% / IR 35.5%</div>
+          </div>
+          <div style="flex:1;background:#e8f4fd;border-radius:4px;padding:4px 6px;text-align:center">
+            <div style="font-size:9px;color:#555;font-weight:600">📅 2025 실적</div>
+            <div style="font-size:10px;font-weight:700;color:#0f3460">OR 65.8% / IR 34.2%</div>
+          </div>
+        </div>
         <div class="param-row">
           <label>OR 비중</label>
           <input type="range" id="p-ch-or" min="20" max="80" value="50" oninput="document.getElementById('p-ch-or-lbl').textContent=this.value+'%';document.getElementById('p-ch-ir-lbl').textContent=(100-this.value)+'%';updateParamSummary()">
@@ -295,11 +305,11 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
           <label>IR 비중</label>
           <span style="font-size:12px;font-weight:700;color:#0f3460" id="p-ch-ir-lbl">50%</span>
         </div>
-        <div style="font-size:11px;font-weight:600;color:#555;margin:6px 0 3px">OR 채널 (5개)</div>
+        <div style="font-size:11px;font-weight:600;color:#555;margin:6px 0 3px">OR 채널 (5개) <span style="font-size:9px;color:#888;font-weight:400;margin-left:8px">📅 24년 → 25년 실적 비중</span></div>
         <div id="p-ch-or-detail"></div>
-        <div style="font-size:11px;font-weight:600;color:#555;margin:6px 0 3px">IR 채널 (8개)</div>
+        <div style="font-size:11px;font-weight:600;color:#555;margin:6px 0 3px">IR 채널 (8개) <span style="font-size:9px;color:#888;font-weight:400;margin-left:8px">📅 24년 → 25년 실적 비중</span></div>
         <div id="p-ch-ir-detail"></div>
-        <div style="font-size:10px;color:#888;margin-top:4px">채널별 분배 시 비중에 반영됩니다.</div>
+        <div style="font-size:10px;color:#888;margin-top:4px">채널별 분배 시 비중에 반영됩니다. 24/25년 실적은 참고용입니다.</div>
       </div>
 
     </div>
@@ -1737,28 +1747,46 @@ function initParamPanel() {
   });
   document.getElementById('p-env-temp-grid').innerHTML = tHtml;
 
-  // Channel OR/IR detail inputs
+  // Channel OR/IR detail inputs with historical share reference
   const OR_CH = ['eXtra','Al Manea','SWS','Black Box','Al Khunizan'];
   const IR_CH = ['BH','BM','Tamkeen','Zagzoog','Dhamin','Star Appliance','Al Ghanem','Al Shathri'];
 
+  // Historical channel sell-out shares (source: 01. Sell Out Review_24_25.xlsx, all categories)
+  const CH_SHARE_2024 = {
+    'eXtra': 64.2, 'Al Manea': 25.3, 'SWS': 1.4, 'Black Box': 7.7, 'Al Khunizan': 1.4,
+    'BH': 74.8, 'BM': 4.8, 'Tamkeen': 11.5, 'Zagzoog': 0.0, 'Dhamin': 6.6,
+    'Star Appliance': 0.0, 'Al Ghanem': 0.0, 'Al Shathri': 2.3
+  };
+  const CH_SHARE_2025 = {
+    'eXtra': 54.8, 'Al Manea': 35.6, 'SWS': 0.4, 'Black Box': 6.6, 'Al Khunizan': 2.5,
+    'BH': 75.8, 'BM': 5.3, 'Tamkeen': 8.5, 'Zagzoog': 0.9, 'Dhamin': 4.7,
+    'Star Appliance': 2.6, 'Al Ghanem': 0.8, 'Al Shathri': 1.5
+  };
+
   let orHtml = '';
   OR_CH.forEach(ch => {
-    const defPct = Math.round(100 / OR_CH.length);
-    orHtml += `<div class="param-row" style="margin-bottom:3px">
-      <label style="min-width:80px;font-size:10px">${ch}</label>
+    const s24 = CH_SHARE_2024[ch] != null ? CH_SHARE_2024[ch].toFixed(1) : '-';
+    const s25 = CH_SHARE_2025[ch] != null ? CH_SHARE_2025[ch].toFixed(1) : '-';
+    const defPct = Math.round(CH_SHARE_2025[ch] || (100 / OR_CH.length));
+    orHtml += `<div class="param-row" style="margin-bottom:3px;align-items:center">
+      <label style="min-width:72px;font-size:10px">${ch}</label>
       <input type="number" id="p-ch-${ch.replace(/\s+/g,'_')}" value="${defPct}" min="0" max="100" class="env-mini-input" onchange="updateParamSummary()">
       <span style="font-size:9px;color:#888">%</span>
+      <span style="font-size:9px;color:#0f3460;margin-left:6px;white-space:nowrap;background:#e8f4fd;padding:1px 4px;border-radius:3px">${s24}→${s25}</span>
     </div>`;
   });
   document.getElementById('p-ch-or-detail').innerHTML = orHtml;
 
   let irHtml = '';
   IR_CH.forEach(ch => {
-    const defPct = Math.round(100 / IR_CH.length);
-    irHtml += `<div class="param-row" style="margin-bottom:3px">
-      <label style="min-width:80px;font-size:10px">${ch}</label>
+    const s24 = CH_SHARE_2024[ch] != null ? CH_SHARE_2024[ch].toFixed(1) : '-';
+    const s25 = CH_SHARE_2025[ch] != null ? CH_SHARE_2025[ch].toFixed(1) : '-';
+    const defPct = Math.round(CH_SHARE_2025[ch] || (100 / IR_CH.length));
+    irHtml += `<div class="param-row" style="margin-bottom:3px;align-items:center">
+      <label style="min-width:72px;font-size:10px">${ch}</label>
       <input type="number" id="p-ch-${ch.replace(/\s+/g,'_')}" value="${defPct}" min="0" max="100" class="env-mini-input" onchange="updateParamSummary()">
       <span style="font-size:9px;color:#888">%</span>
+      <span style="font-size:9px;color:#0f3460;margin-left:6px;white-space:nowrap;background:#e8f4fd;padding:1px 4px;border-radius:3px">${s24}→${s25}</span>
     </div>`;
   });
   document.getElementById('p-ch-ir-detail').innerHTML = irHtml;
