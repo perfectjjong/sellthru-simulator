@@ -197,6 +197,7 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
           <input type="range" id="p-supply-q4" min="50" max="150" value="70" oninput="this.nextElementSibling.textContent=this.value+'%';updateParamSummary()">
           <span style="font-size:11px;font-weight:600;min-width:35px">70%</span>
         </div>
+        <div id="p-supply-ref" style="margin-top:6px"></div>
         <div style="font-size:10px;color:#888;margin-top:4px">공급/재고 시뮬에서 Sell-In에 적용됩니다.</div>
       </div>
 
@@ -209,6 +210,7 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
           <span style="font-size:11px;font-weight:600;min-width:35px" id="p-demand-all-lbl">±0%p</span>
         </div>
         <div id="p-demand-cats"></div>
+        <div id="p-demand-ref" style="margin-top:6px"></div>
         <div style="font-size:10px;color:#888;margin-top:4px">YoY 기본 성장률에 추가 적용됩니다.</div>
       </div>
 
@@ -237,6 +239,7 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
       <div class="param-section">
         <div class="param-section-title">4️⃣ 모델믹스 (카테고리 비중 조정)</div>
         <div id="p-modelmix-cats"></div>
+        <div id="p-modelmix-ref" style="margin-top:6px"></div>
         <div style="font-size:10px;color:#888;margin-top:4px">모델별 분배 시 카테고리 가중치에 적용됩니다.</div>
       </div>
 
@@ -1735,6 +1738,56 @@ function initParamPanel() {
     </div>`;
   });
   document.getElementById('p-modelmix-cats').innerHTML = mHtml;
+
+  // === 1번 공급전략: 24/25년 분기별 Sell Out 비중 참고 ===
+  {
+    const qMonths = {Q2:['Apr','May','Jun'], Q3:['Jul','Aug','Sep'], Q4:['Oct','Nov','Dec']};
+    let refHtml = '<div style="display:flex;gap:6px">';
+    [['2024', ACTUAL_2024], ['2025', ACTUAL_2025]].forEach(([yr, src]) => {
+      const qTotals = {Q2:0, Q3:0, Q4:0};
+      CATEGORIES.forEach(cat => { const d = src[cat]||{}; Object.entries(qMonths).forEach(([q, ms]) => { ms.forEach(m => { qTotals[q] += d[m]||0; }); }); });
+      const total = qTotals.Q2 + qTotals.Q3 + qTotals.Q4;
+      refHtml += `<div style="flex:1;background:#e8f4fd;border-radius:4px;padding:4px 6px;text-align:center">
+        <div style="font-size:9px;color:#555;font-weight:600">📅 ${yr} 실적</div>
+        <div style="font-size:9px;color:#0f3460;font-weight:700">${total > 0 ? `Q2 ${(qTotals.Q2/total*100).toFixed(0)}% / Q3 ${(qTotals.Q3/total*100).toFixed(0)}% / Q4 ${(qTotals.Q4/total*100).toFixed(0)}%` : 'N/A'}</div>
+      </div>`;
+    });
+    refHtml += '</div>';
+    document.getElementById('p-supply-ref').innerHTML = refHtml;
+  }
+
+  // === 2번 수요가정: 24/25년 카테고리별 실제 YoY 성장률 참고 ===
+  {
+    let refHtml = '<div style="display:flex;gap:6px"><div style="flex:1;background:#e8f4fd;border-radius:4px;padding:4px 6px">' +
+      '<div style="font-size:9px;color:#555;font-weight:600;text-align:center;margin-bottom:3px">📅 실적 YoY (25년/24년)</div>';
+    CATEGORIES.forEach(cat => {
+      const t24 = Object.values(ACTUAL_2024[cat]||{}).reduce((s,v)=>s+v,0);
+      const t25 = Object.values(ACTUAL_2025[cat]||{}).reduce((s,v)=>s+v,0);
+      let yoyStr = 'N/A';
+      if (t24 > 0) { const yoy = (t25/t24 - 1)*100; yoyStr = `<span style="color:${yoy>=0?'#27ae60':'#e74c3c'}">${yoy>=0?'+':''}${yoy.toFixed(1)}%</span>`; }
+      refHtml += `<div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 2px"><span style="color:#555">${cat}</span><span style="font-weight:700">${yoyStr}</span></div>`;
+    });
+    refHtml += '</div></div>';
+    document.getElementById('p-demand-ref').innerHTML = refHtml;
+  }
+
+  // === 4번 모델믹스: 24/25년 카테고리별 비중 참고 ===
+  {
+    let refHtml = '<div style="display:flex;gap:6px">';
+    [['2024', ACTUAL_2024], ['2025', ACTUAL_2025]].forEach(([yr, src]) => {
+      const totals = {}; let grand = 0;
+      CATEGORIES.forEach(cat => { const t = Object.values(src[cat]||{}).reduce((s,v)=>s+v,0); totals[cat] = t; grand += t; });
+      refHtml += `<div style="flex:1;background:#e8f4fd;border-radius:4px;padding:4px 6px">
+        <div style="font-size:9px;color:#555;font-weight:600;text-align:center;margin-bottom:3px">📅 ${yr} 실적 비중</div>`;
+      CATEGORIES.forEach(cat => {
+        const pct = grand > 0 ? (totals[cat]/grand*100).toFixed(1) : '0.0';
+        refHtml += `<div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 2px"><span style="color:#555">${cat}</span><span style="font-weight:700;color:#0f3460">${pct}%</span></div>`;
+      });
+      refHtml += '</div>';
+    });
+    refHtml += '</div>';
+    document.getElementById('p-modelmix-ref').innerHTML = refHtml;
+  }
 
   // Temperature inputs
   let tHtml = '';
