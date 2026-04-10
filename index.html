@@ -2999,6 +2999,8 @@ async function callClaudeAI() {
         q1_2026: q1,
         user_actuals: userActual,
         stats_prediction: statsPrediction,
+        channel_mix: (_DATA.channel_mix || {})[cat] || {},
+        channel_stock: _DATA.channel_stock || {},
       }),
     });
 
@@ -3059,9 +3061,75 @@ function renderClaudeResult(cat, data) {
   document.getElementById('claude-model-info').textContent =
     `Model: ${data._model || 'claude-haiku'} | 연간 예측 합계: ${(data.annual_total || 0).toLocaleString()}대 (YoY ${yoy})`;
 
-  // Reasoning
-  document.getElementById('claude-reasoning-box').innerHTML =
-    `<strong>🧠 Claude AI 분석 코멘트</strong><br><br>${data.reasoning || '-'}`;
+  // Reasoning + Detailed Analysis
+  let reasoningHtml = `<strong>🧠 Claude AI 분석 코멘트</strong><br><br>${data.reasoning || '-'}`;
+
+  // Detailed analysis section (4-part breakdown)
+  if (data.detailed_analysis) {
+    const da = data.detailed_analysis;
+    reasoningHtml += `<hr style="margin:12px 0;border-color:#ddd">
+    <strong>📊 상세 분석 리포트</strong>
+    <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px">
+      <tr style="background:#f3e5f5">
+        <td style="padding:6px 8px;width:130px;font-weight:700;color:#6a1b9a;vertical-align:top">📈 트렌드 평가</td>
+        <td style="padding:6px 8px">${da.trend_assessment || '-'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;font-weight:700;color:#6a1b9a;vertical-align:top;background:#fce4ec">🌡️ 계절 패턴</td>
+        <td style="padding:6px 8px">${da.seasonal_pattern || '-'}</td>
+      </tr>
+      <tr style="background:#e8f5e9">
+        <td style="padding:6px 8px;font-weight:700;color:#2e7d32;vertical-align:top">📌 Q1 신호</td>
+        <td style="padding:6px 8px">${da.q1_2026_signal || '-'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;font-weight:700;color:#0f3460;vertical-align:top;background:#e3f2fd">⚖️ vs 통계 모델</td>
+        <td style="padding:6px 8px">${da.vs_stats_model || '-'}</td>
+      </tr>
+    </table>`;
+  }
+
+  // Channel analysis section
+  if (data.channel_analysis && Object.keys(data.channel_analysis).length > 0) {
+    const channelMix = (_DATA.channel_mix || {})[cat] || {};
+    const channelStock = _DATA.channel_stock || {};
+    const sortedChannels = Object.entries(data.channel_analysis)
+      .sort((a, b) => (channelMix[b[0]] || 0) - (channelMix[a[0]] || 0));
+
+    reasoningHtml += `<hr style="margin:12px 0;border-color:#ddd">
+    <strong>🏪 채널별 예측 근거</strong>
+    <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px">
+      <tr style="background:#eceff1;font-weight:700">
+        <td style="padding:5px 8px;width:100px">채널</td>
+        <td style="padding:5px 8px;width:55px;text-align:center">점유율</td>
+        <td style="padding:5px 8px;width:55px;text-align:center">WOS</td>
+        <td style="padding:5px 8px">예측 근거</td>
+      </tr>`;
+
+    sortedChannels.forEach(([ch, analysis], idx) => {
+      const pct = channelMix[ch] ? channelMix[ch].toFixed(1) + '%' : '-';
+      const st = channelStock[ch];
+      let wosHtml = '-';
+      if (st) {
+        const wosOk = st.wos >= (st.wos_opportunity || 12) && st.wos <= (st.wos_healthy || 24);
+        const wosHigh = st.wos > (st.wos_healthy || 24);
+        const wosLow = st.wos < (st.wos_opportunity || 12);
+        const wosColor = wosHigh ? '#e74c3c' : wosLow ? '#e67e22' : '#27ae60';
+        const wosIcon = wosHigh ? '📦' : wosLow ? '⚠️' : '✅';
+        wosHtml = `<span style="color:${wosColor};font-weight:700">${wosIcon}${st.wos}w</span>`;
+      }
+      const bg = idx % 2 === 0 ? '#fff' : '#f9f9f9';
+      reasoningHtml += `<tr style="background:${bg}">
+        <td style="padding:5px 8px;font-weight:700">${ch}</td>
+        <td style="padding:5px 8px;text-align:center;color:#555">${pct}</td>
+        <td style="padding:5px 8px;text-align:center">${wosHtml}</td>
+        <td style="padding:5px 8px;color:#333">${analysis}</td>
+      </tr>`;
+    });
+    reasoningHtml += `</table>`;
+  }
+
+  document.getElementById('claude-reasoning-box').innerHTML = reasoningHtml;
 
   // Table
   const tbody = document.getElementById('claude-detail-body');
