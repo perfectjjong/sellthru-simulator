@@ -466,9 +466,9 @@ select { padding: 6px 8px; border: 1px solid #dde1e8; border-radius: 4px; font-s
     <div id="annual-summary"></div>
   </div>
   <div class="card">
-    <div class="card-title">📅 2024 / 2025 / 2026 연도별 실적 비교 (Sell Out)</div>
+    <div class="card-title">📅 2023 / 2024 / 2025 / 2026 연도별 실적 비교 (Sell Out)</div>
     <div class="info-box">
-      <strong>2024 / 2025</strong>: IR 5채널 + OR 5채널 합산 실제 Sell Out &nbsp;|&nbsp;
+      <strong>2023 / 2024 / 2025</strong>: IR 5채널 + OR 5채널 합산 실제 Sell Out &nbsp;|&nbsp;
       <strong>2026</strong>: Jan~Mar 실적 + Apr~Dec 시뮬 목표 합산
     </div>
     <div id="year-compare-table"></div>
@@ -1601,6 +1601,7 @@ function buildAnnualTab() {
 function buildYearComparison() {
   const ML = {Jan:'1월',Feb:'2월',Mar:'3월',Apr:'4월',May:'5월',Jun:'6월',Jul:'7월',Aug:'8월',Sep:'9월',Oct:'10월',Nov:'11월',Dec:'12월'};
   const YRS = [
+    {key:'2023', label:'2023 실적', color:'#b71c1c', bg:'#ffebee', hbg:'#ef9a9a'},
     {key:'2024', label:'2024 실적', color:'#7b1fa2', bg:'#f3e5f5', hbg:'#ce93d8'},
     {key:'2025', label:'2025 실적', color:'#1565c0', bg:'#e3f2fd', hbg:'#90caf9'},
     {key:'2026', label:'2026 실적+목표', color:'#2e7d32', bg:'#e8f5e9', hbg:'#a5d6a7'},
@@ -1614,7 +1615,7 @@ function buildYearComparison() {
       else { const el = document.getElementById('mix-' + cat + '-' + m); data26[cat][m] = el ? (parseInt(el.value) || 0) : 0; }
     });
   });
-  function getD(yr) { return yr === '2024' ? ACTUAL_2024 : yr === '2025' ? ACTUAL_2025 : data26; }
+  function getD(yr) { return yr === '2023' ? ACTUAL_2023 : yr === '2024' ? ACTUAL_2024 : yr === '2025' ? ACTUAL_2025 : data26; }
   const grand = {};
   YRS.forEach(yr => { const d = getD(yr.key); grand[yr.key] = CATEGORIES.reduce((s,cat) => s + ALL_MONTHS.reduce((s2,m) => s2 + ((d[cat]||{})[m]||0), 0), 0); });
 
@@ -1625,7 +1626,7 @@ function buildYearComparison() {
     YRS.forEach(yr => {
       const d = getD(yr.key); const v = ALL_MONTHS.reduce((s,m) => s + ((d[cat]||{})[m]||0), 0);
       const yoy = prev > 0 ? ' <span style="font-size:10px;color:#888">(YoY ' + ((v/prev-1)*100).toFixed(0) + '%)</span>' : '';
-      sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:'+yr.color+';font-size:11px">'+yr.label+'</span><span style="color:'+yr.color+';font-weight:700">'+(v>0?v.toLocaleString():'—')+(yr.key!=='2024'?yoy:'')+'</span></div>';
+      sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:'+yr.color+';font-size:11px">'+yr.label+'</span><span style="color:'+yr.color+';font-weight:700">'+(v>0?v.toLocaleString():'—')+(yr.key!=='2023'?yoy:'')+'</span></div>';
       prev = v;
     });
     sumHtml += '</div>';
@@ -1634,7 +1635,7 @@ function buildYearComparison() {
   let prev2 = 0;
   YRS.forEach(yr => {
     const v = grand[yr.key]; const yoy = prev2>0?' <span style="font-size:10px;color:#888">(YoY '+((v/prev2-1)*100).toFixed(0)+'%)</span>':'';
-    sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:'+yr.color+';font-size:11px">'+yr.label+'</span><span style="color:'+yr.color+';font-weight:700;font-size:13px">'+v.toLocaleString()+(yr.key!=='2024'?yoy:'')+'</span></div>';
+    sumHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:'+yr.color+';font-size:11px">'+yr.label+'</span><span style="color:'+yr.color+';font-weight:700;font-size:13px">'+v.toLocaleString()+(yr.key!=='2023'?yoy:'')+'</span></div>';
     prev2 = v;
   });
   sumHtml += '</div></div>';
