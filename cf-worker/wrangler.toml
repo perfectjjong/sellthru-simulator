@@ -1,0 +1,7 @@
+name = "sellthru-ai-worker"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Set API key via:
+# npx wrangler secret put ANTHROPIC_API_KEY
+# (then paste your Anthropic API key when prompted)
