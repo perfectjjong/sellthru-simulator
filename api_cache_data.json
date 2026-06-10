@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-03 09:00:01",
+  "updated_at": "2026-06-10 09:00:02",
   "updated_by": "api_cache_weather_oil.py",
   "temperature": {
     "monthly_avg": {
@@ -34,13 +34,13 @@
     "location": "Riyadh, Saudi Arabia"
   },
   "oil": {
-    "wti_price": 95.3,
+    "wti_price": 88.09,
     "wti_level": "high",
     "recent_prices": [
-      87.36,
-      92.16,
-      93.76,
-      95.3
+      90.54,
+      91.3,
+      88.2,
+      88.09
     ],
     "source": "Yahoo Finance (WTI CL=F)"
   }
