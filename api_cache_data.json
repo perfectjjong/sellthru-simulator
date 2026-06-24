@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-17 09:00:01",
+  "updated_at": "2026-06-24 09:00:05",
   "updated_by": "api_cache_weather_oil.py",
   "temperature": {
     "monthly_avg": {
@@ -8,8 +8,8 @@
       "Mar": 21.8,
       "Apr": 26.8,
       "May": 33.0,
-      "Jun": 37.9,
-      "Jul": 37.7,
+      "Jun": 37.8,
+      "Jul": 38.7,
       "Aug": 37.7,
       "Sep": 34.7,
       "Oct": 28.8,
@@ -34,13 +34,13 @@
     "location": "Riyadh, Saudi Arabia"
   },
   "oil": {
-    "wti_price": 75.02,
+    "wti_price": 72.59,
     "wti_level": "mid",
     "recent_prices": [
-      84.88,
-      80.75,
-      76.05,
-      75.02
+      76.6,
+      74.82,
+      73.21,
+      72.59
     ],
     "source": "Yahoo Finance (WTI CL=F)"
   }
